@@ -34,7 +34,7 @@ hyps_all <- get_hypsography(hypsofile = '../input/bathymetry.csv',
 ## ATMOSPHERIC BOUNDARY CONDITIONS
 cut_meteo <- read_csv('../input/Mendota_1980_2019_box_5_CT.csv')
 years <- lubridate::year(cut_meteo$datetime)
-cut_meteo <- cut_meteo[which(years >= 2002), ]
+cut_meteo <- cut_meteo[which(years >= 2006), ]
 write.csv(x = cut_meteo, file = '../input/Mendota_2002.csv', row.names = FALSE)
 
 meteo_all <- provide_meteorology(meteofile = '../input/Mendota_2002.csv',
@@ -43,7 +43,7 @@ meteo_all <- provide_meteorology(meteofile = '../input/Mendota_2002.csv',
 ### TIME INFORMATION
 startingDate <- meteo_all[[1]]$datetime[1]
 startTime = 1
-endTime = 18 * 365 *24 * 3600 # seconds
+endTime = 14 * 365 *24 * 3600 # seconds
 total_runtime = endTime / 24 / 3600 # days
 
 # INTERPOLATE ATMOSPHERIC BOUNDARY CONDITIONS
@@ -101,7 +101,7 @@ diff = res$diff
 
 ## POST-PROCESSING OF THE RESULTS
 time =  startingDate + seq(1, ncol(temp), 1) * dt
-time =  as.POSIXct('2002-01-01 00:00:00', tz = 'CDT') + seq(1, ncol(temp), 1) * dt
+# time =  as.POSIXct('2002-01-01 00:00:00', tz = 'CDT') + seq(1, ncol(temp), 1) * dt
 avgtemp = as.data.frame(avgtemp)
 colnames(avgtemp) = c('time', 'epi', 'hyp', 'tot', 'stratFlag', 'thermoclineDep')
 avgtemp$time = time
@@ -307,14 +307,15 @@ dat = zoo::na.approx(dat0, na.rm = F, rule = 2)
 dat3 = apply(as.matrix(dat), 1, function(x) approx(seq(0,20,1),x,seq(1,25,1), method = 'linear', rule=2)$y)
 dat4 = t(dat3)
 
-dat5 = apply(as.matrix(dat4), 2, function(x) approx(x = wide.obs$datetime - wide.obs$datetime[1],
-                                                    y = x,
-                                                    xout = df$time - df$time[1],
-                                                    method = 'linear', rule=2)$y)
-dat5 = apply(as.matrix(dat4), 2, function(x) approx(as.numeric(wide.obs$datetime - df$time[1], units = 'secs'),
-                                                    x,
-                                                    as.numeric(df$time-df$time[1], units = 'secs'),
-                                                    method = 'linear', rule=2)$y)
+# dat5 = apply(as.matrix(dat4), 2, function(x) approx(x = wide.obs$datetime - wide.obs$datetime[1],
+#                                                     y = x,
+#                                                     xout = df$time - df$time[1],
+#                                                     method = 'linear', rule=2)$y)
+# dat5 = apply(as.matrix(dat4), 2, function(x) approx(as.numeric(wide.obs$datetime - df$time[1], units = 'secs'),
+#                                                     x,
+#                                                     as.numeric(df$time-df$time[1], units = 'secs'),
+#                                                     method = 'linear', rule=2)$y)
+
 dat5 = apply(as.matrix(dat4), 2, function(x) approx(x = wide.obs$datetime,
                                                     y = x,
                                                     xout = df$time,
