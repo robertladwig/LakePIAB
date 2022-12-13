@@ -43,7 +43,7 @@ meteo_all <- provide_meteorology(meteofile = '../input/Mendota_2002.csv',
 ### TIME INFORMATION
 startingDate <- meteo_all[[1]]$datetime[1]
 startTime = 1
-endTime = 2 * 365 *24 * 3600 # seconds 14
+endTime = 365 *24 * 3600 # seconds 14 2 * 365
 total_runtime = endTime / 24 / 3600 # days
 
 # INTERPOLATE ATMOSPHERIC BOUNDARY CONDITIONS
