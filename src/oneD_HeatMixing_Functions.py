@@ -91,9 +91,9 @@ def provide_meteorology(meteofile, secchifile, windfactor):
     
     return([daily_meteo, secview])
   
-def initial_profile(initfile, nx, dx, depth, processed_meteo):
-  meteo = processed_meteo
-  startDate = meteo['date'].min()
+def initial_profile(initfile, nx, dx, depth, startDate):
+  #meteo = processed_meteo
+  #startDate = meteo['date'].min()
   obs = pd.read_csv(initfile)
   obs['datetime'] = pd.to_datetime(obs['datetime'])
   obs['ditt'] = abs(obs['datetime'] - startDate)
@@ -628,10 +628,11 @@ def run_thermalmodel(
     def kd(n): # using this shortcut for now / testing if it works
       return kd_light
 
-  start_time = datetime.datetime.now()
+  
 
   times = np.arange(startTime, endTime, dt)
   for idn, n in enumerate(times):
+    start_time = datetime.datetime.now()
     un = deepcopy(u)
     dens_u_n2 = calc_dens(u)
     time_ind = np.where(times == n)
@@ -968,9 +969,10 @@ def run_thermalmodel(
       meteo_pgdl[6, idn] = shear
       meteo_pgdl[7, idn] = tau
       meteo_pgdl[8, idn] = np.nanmax(area)
+      
+    end_time = datetime.datetime.now()
+    print((end_time - start_time))
 
-  end_time = datetime.datetime.now()
-  #print((end_time - start_time))
   
   bf_sim = np.apply_along_axis(center_buoyancy, axis=1, arr = um.T, depths=depth)
   
@@ -1194,6 +1196,8 @@ def run_hybridmodel(
   RH = interp1d(daily_meteo.dt.values, daily_meteo.Relative_Humidity_percent.values, kind = "linear", fill_value=RH_fillvals, bounds_error=False)
   PP_fillvals = tuple(daily_meteo.Precipitation_millimeterPerDay.values[[0,-1]])
   PP = interp1d(daily_meteo.dt.values, daily_meteo.Precipitation_millimeterPerDay.values, kind = "linear", fill_value=PP_fillvals, bounds_error=False)
+  time_fillvals = tuple(daily_meteo.date.values[[0,-1]])
+  time = interp1d(daily_meteo.dt.values, daily_meteo.date.values, kind = "linear", fill_value=time_fillvals, bounds_error=False)
 
   #plt.plot(PP(np.arange(1,1e7,1)))
   #plt.plot(daily_meteo.Precipitation_millimeterPerDay.values[[0, -1]])
@@ -1228,10 +1232,11 @@ def run_hybridmodel(
     def kd(n): # using this shortcut for now / testing if it works
       return kd_light
 
-  start_time = datetime.datetime.now()
+  
 
   times = np.arange(startTime, endTime, dt)
   for idn, n in enumerate(times):
+    start_time = datetime.datetime.now()  
     un = deepcopy(u)
     dens_u_n2 = calc_dens(u)
     time_ind = np.where(times == n)
@@ -1284,6 +1289,12 @@ def run_hybridmodel(
       
     shear = sqrt((c10 * calc_dens(un[0]))/1.225) *  Uw(n) 
     tau = 1.225 * Cd * Uw(n)**2 
+    
+    date_time = daily_meteo.date
+    day_of_year_list = [t.timetuple().tm_yday for t in date_time]
+    time_of_day_list = [t.hour for t in date_time]
+
+
     input_data_raw = {'depth':[i for i in range(1,26)],
                              'AirTemp_degC':np.ones(25)*Tair(n),
                              'Longwave_Wm-2':np.ones(25)* lngwave_total,
@@ -1291,23 +1302,31 @@ def run_hybridmodel(
                              'Sensible_Wm-2':np.ones(25) * sensible(Tair = Tair(n), Twater = un[0], Uw = Uw(n), p2 = p2, pa = Pa(n), ea=ea(n), RH = RH(n), A = area, Cd = Cd),
                              'Shortwave_Wm-2':np.ones(25) * Jsw(n),
                              'lightExtinct_m-1':np.ones(25) * kd_light,
-                             'ShearVelocity_mS-1':np.ones(25) * shear,
-                             'ShearStress_Nm-2':np.ones(25) * tau,
+                             #'ShearVelocity_mS-1':np.ones(25) * shear,
+                             #'ShearStress_Nm-2':np.ones(25) * tau,
                              'Area_m2':np.ones(25)* np.nanmax(area),
-                             'buoyancy':np.concatenate([n2, np.array([np.nan])]),
-                             'day_of_year':np.ones(25) * np.ceil(n / 24),
-                             'time_of_day':np.ones(25) * (n % 24),
-                             'diffusivity':np.ones(25) * kzn}
+                             #'buoyancy':np.concatenate([n2, np.array([np.nan])]),
+                             'day_of_year':np.ones(25) * day_of_year_list[int(n/dt)],
+                             'time_of_day':np.ones(25) * time_of_day_list[int(n/dt)],
+                             'temp_initial':np.ones(25) * un}
+                             #'diffusivity':np.ones(25) * kzn}
     input_mcl = pd.DataFrame(input_data_raw)
     input_columns = ['depth', 'AirTemp_degC', 'Longwave_Wm-2', 'Latent_Wm-2', 'Sensible_Wm-2', 'Shortwave_Wm-2',
-                'lightExtinct_m-1', 'ShearVelocity_mS-1', 'ShearStress_Nm-2', 'Area_m2', 
-                 'buoyancy', 'day_of_year', 'time_of_day', 'diffusivity']
+                'lightExtinct_m-1', 'Area_m2', 'day_of_year', 'time_of_day', 'temp_initial']
+    
+    # print(input_mcl['AirTemp_degC'])
+    # print(input_mcl['Longwave_Wm-2'])
+    # print(input_mcl['Latent_Wm-2'])
+    # print(input_mcl['Sensible_Wm-2'])
+    # print(input_mcl['Shortwave_Wm-2'])
+    # print(input_mcl['lightExtinct_m-1'])
+    # print(input_mcl['Area_m2'])
+    
     
     input_column_ix = [input_mcl.columns.get_loc(column) for column in input_columns]
     
     scaler = StandardScaler()
     scaler.fit(input_mcl)
-    input_scaler = scaler.transform(input_mcl)
     
     input_data = scaler.transform(input_mcl)
     
@@ -1316,14 +1335,29 @@ def run_hybridmodel(
 
     input_mean, input_std = train_mean[input_column_ix], train_std[input_column_ix]
     
-    train_loader = torch.utils.data.DataLoader(input_data, batch_size=25, 
-                                           shuffle=False)
+    # train_loader = torch.utils.data.DataLoader(input_data, batch_size=25, 
+    #                                        shuffle=False)
     
-    x = train_loader.to(device).float()
+    # x = train_loader.to(device).float()
     
-    heating_model(input_data)
+    input_data_tensor = torch.tensor(input_data, device = torch.device('cpu'))
     
-    breakpoint()
+    #breakpoint()
+    
+    #print(input_data_tensor.dtype)
+    #print(input_data_tensor.shape)
+    
+    output_tensor = heating_model(input_data_tensor.float())
+    
+    output_array = output_tensor.detach().cpu().numpy()
+    
+    #u = output_array * input_std[10] + input_mean[10]
+    u = output_array * 5.509512073633066 + 14.310124723801062
+    
+    u = u[:,0]
+    
+    # print(u)
+    # breakpoint()
     
     # u[0] = (un[0] + 
     #     (Q * area[0]/(dx)*1/(4184 * calc_dens(un[0]) ) + abs(H[0+1]-H[0]) * area[0]/(dx) * 1/(4184 * calc_dens(un[0]) ) + 
@@ -1617,9 +1651,11 @@ def run_hybridmodel(
       meteo_pgdl[6, idn] = shear
       meteo_pgdl[7, idn] = tau
       meteo_pgdl[8, idn] = np.nanmax(area)
+    
+    end_time = datetime.datetime.now()
+    print((end_time - start_time))
 
-  end_time = datetime.datetime.now()
-  #print((end_time - start_time))
+
   
   bf_sim = np.apply_along_axis(center_buoyancy, axis=1, arr = um.T, depths=depth)
   
