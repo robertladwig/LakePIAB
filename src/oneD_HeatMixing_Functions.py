@@ -69,7 +69,10 @@ def provide_meteorology(meteofile, secchifile, windfactor):
     daily_meteo['Shortwave_Radiation_Downwelling_wattPerMeterSquared'] = daily_meteo['Shortwave_Radiation_Downwelling_wattPerMeterSquared'] 
     daily_meteo['Ten_Meter_Elevation_Wind_Speed_meterPerSecond'] = daily_meteo['Ten_Meter_Elevation_Wind_Speed_meterPerSecond'] * windfactor # wind speed multiplier
     
-    
+    date_time = daily_meteo.date
+
+    daily_meteo['day_of_year_list'] = [t.timetuple().tm_yday for t in date_time]
+    daily_meteo['time_of_day_list'] = [t.hour for t in date_time]
     ## light
     # Package ID: knb-lter-ntl.31.30 Cataloging System:https://pasta.edirepository.org.
     # Data set title: North Temperate Lakes LTER: Secchi Disk Depth; Other Auxiliary Base Crew Sample Data 1981 - current.
@@ -632,7 +635,7 @@ def run_thermalmodel(
 
   times = np.arange(startTime, endTime, dt)
   for idn, n in enumerate(times):
-    start_time = datetime.datetime.now()
+    
     un = deepcopy(u)
     dens_u_n2 = calc_dens(u)
     time_ind = np.where(times == n)
@@ -661,6 +664,7 @@ def run_thermalmodel(
     
     ## (1) HEAT ADDITION
     # surface heat flux
+    start_time = datetime.datetime.now()
     Q = (longwave(cc = CC(n), sigma = sigma, Tair = Tair(n), ea = ea(n), emissivity = emissivity, Jlw = Jlw(n)) + #longwave(emissivity = emissivity, Jlw = Jlw(n)) +
             backscattering(emissivity = emissivity, sigma = sigma, Twater = un[0], eps = eps) +
             latent(Tair = Tair(n), Twater = un[0], Uw = Uw(n), p2 = p2, pa = Pa(n), ea=ea(n), RH = RH(n), A = area, Cd = Cd) + 
@@ -690,9 +694,13 @@ def run_thermalmodel(
       um_heat[:, idn] = u
       Hm[:, idn] = H
       Qm[0, idn] = Q
+    
+    end_time = datetime.datetime.now()
+    print("heating: " + str(end_time - start_time))
 
 
     ## (2) DIFFUSION
+    start_time = datetime.datetime.now()
     if scheme == 'implicit':
 
       
@@ -756,11 +764,15 @@ def run_thermalmodel(
                                                            
     if pgdl_mode == 'on':
       um_diff[:, idn] = u
+
+    end_time = datetime.datetime.now()
+    print("diffusion: " + str(end_time - start_time))
       
     ## (3) TURBULENT MIXING OF MIXED LAYER
     # the mixed layer depth is determined for each time step by comparing kinetic 
     # energy available from wind and the potential energy required to completely 
     # mix the water column to a given depth
+    start_time = datetime.datetime.now()
     Zcv = np.sum(depth * area) / sum(area)  # center of volume
     tau = 1.225 * Cd * Uw(n) ** 2 # wind shear is air density times wind velocity 
     if (Uw(n) <= 15):
@@ -801,6 +813,9 @@ def run_thermalmodel(
     if pgdl_mode == 'on':
       um_mix[:, idn] = u
 
+    end_time = datetime.datetime.now()
+    print("mixing: " + str(end_time - start_time))
+
     ## (4) DENSITY INSTABILITIES
     # convective overturn: Convective mixing is induced by an unstable density 
     # profile. All groups of water layers where the vertical density profile is 
@@ -808,6 +823,7 @@ def run_thermalmodel(
     # (i.e., a layer volume weighed means of temperature and other variables are 
     # calculated for the mixed water column). This procedure is continued until 
     # the vertical density profile in the whole water column becomes neutral or stable.
+    start_time = datetime.datetime.now()
     dens_u = calc_dens(u) 
     diff_dens_u = np.diff(dens_u) 
     diff_dens_u[abs(diff_dens_u) <= denThresh] = 0
@@ -832,10 +848,13 @@ def run_thermalmodel(
     if pgdl_mode == 'on':
       um_conv[:, idn] = u
       
-      
+    
+    end_time = datetime.datetime.now()
+    print("convection: " + str(end_time - start_time))
     ## (5) ICE FORMATION
     # according to Saloranta & Andersen (2007) and ice growth due to Stefan's law
     # (Leppäranta 1991)
+    start_time = datetime.datetime.now()
     icep  = max(dt_iceon_avg,  (dt/86400))
     x = (dt/86400) / icep
     iceT = iceT * (1 - x) + u[0] * x
@@ -971,7 +990,7 @@ def run_thermalmodel(
       meteo_pgdl[8, idn] = np.nanmax(area)
       
     end_time = datetime.datetime.now()
-    print((end_time - start_time))
+    print("ice: " + str(end_time - start_time))
 
   
   bf_sim = np.apply_along_axis(center_buoyancy, axis=1, arr = um.T, depths=depth)
@@ -1236,7 +1255,7 @@ def run_hybridmodel(
 
   times = np.arange(startTime, endTime, dt)
   for idn, n in enumerate(times):
-    start_time = datetime.datetime.now()  
+    
     un = deepcopy(u)
     dens_u_n2 = calc_dens(u)
     time_ind = np.where(times == n)
@@ -1264,6 +1283,8 @@ def run_hybridmodel(
     kzm[:,idn] = kzn
     
     ## (1) HEAT ADDITION
+    start_time = datetime.datetime.now()  
+
     # surface heat flux
     Q = (longwave(cc = CC(n), sigma = sigma, Tair = Tair(n), ea = ea(n), emissivity = emissivity, Jlw = Jlw(n)) + #longwave(emissivity = emissivity, Jlw = Jlw(n)) +
             backscattering(emissivity = emissivity, sigma = sigma, Twater = un[0], eps = eps) +
@@ -1282,18 +1303,10 @@ def run_hybridmodel(
     Hg = np.append(Hg, Hg.min())
     
     lngwave_total = longwave(cc = CC(n), sigma = sigma, Tair = Tair(n), ea = ea(n), emissivity = emissivity, Jlw = Jlw(n)) -backscattering(emissivity = emissivity, sigma = sigma, Twater = un[0], eps = eps)
-    if (Uw(n) <= 15):
-      c10 = 0.0005 * sqrt(Uw(n))
-    else:
-      c10 = 0.0026
-      
-    shear = sqrt((c10 * calc_dens(un[0]))/1.225) *  Uw(n) 
-    tau = 1.225 * Cd * Uw(n)**2 
-    
-    date_time = daily_meteo.date
-    day_of_year_list = [t.timetuple().tm_yday for t in date_time]
-    time_of_day_list = [t.hour for t in date_time]
 
+    date_time = daily_meteo.date
+    day_of_year_list = daily_meteo.day_of_year_list
+    time_of_day_list = daily_meteo.time_of_day_list
 
     input_data_raw = {'depth':[i for i in range(1,26)],
                              'AirTemp_degC':np.ones(25)*Tair(n),
@@ -1321,8 +1334,7 @@ def run_hybridmodel(
     # print(input_mcl['Shortwave_Wm-2'])
     # print(input_mcl['lightExtinct_m-1'])
     # print(input_mcl['Area_m2'])
-    
-    
+
     input_column_ix = [input_mcl.columns.get_loc(column) for column in input_columns]
     
     scaler = StandardScaler()
@@ -1340,6 +1352,7 @@ def run_hybridmodel(
     
     # x = train_loader.to(device).float()
     
+
     input_data_tensor = torch.tensor(input_data, device = torch.device('cpu'))
     
     #breakpoint()
@@ -1351,13 +1364,17 @@ def run_hybridmodel(
     
     output_array = output_tensor.detach().cpu().numpy()
     
+
     #u = output_array * input_std[10] + input_mean[10]
     u = output_array * 5.509512073633066 + 14.310124723801062
     
     u = u[:,0]
+
+    end_time = datetime.datetime.now()
+    print("heating: " + str(end_time - start_time))
     
     # print(u)
-    # breakpoint()
+    #breakpoint()
     
     # u[0] = (un[0] + 
     #     (Q * area[0]/(dx)*1/(4184 * calc_dens(un[0]) ) + abs(H[0+1]-H[0]) * area[0]/(dx) * 1/(4184 * calc_dens(un[0]) ) + 
@@ -1375,6 +1392,7 @@ def run_hybridmodel(
 
 
     ## (2) DIFFUSION
+    start_time = datetime.datetime.now()  
     if scheme == 'implicit':
 
       
@@ -1438,11 +1456,15 @@ def run_hybridmodel(
                                                            
     if pgdl_mode == 'on':
       um_diff[:, idn] = u
+
+    end_time = datetime.datetime.now()
+    print("diffusion: " + str(end_time - start_time))
       
     ## (3) TURBULENT MIXING OF MIXED LAYER
     # the mixed layer depth is determined for each time step by comparing kinetic 
     # energy available from wind and the potential energy required to completely 
     # mix the water column to a given depth
+    start_time = datetime.datetime.now()  
     Zcv = np.sum(depth * area) / sum(area)  # center of volume
     tau = 1.225 * Cd * Uw(n) ** 2 # wind shear is air density times wind velocity 
     if (Uw(n) <= 15):
@@ -1483,6 +1505,9 @@ def run_hybridmodel(
     if pgdl_mode == 'on':
       um_mix[:, idn] = u
 
+    end_time = datetime.datetime.now()
+    print("mixing: " + str(end_time - start_time))
+
     ## (4) DENSITY INSTABILITIES
     # convective overturn: Convective mixing is induced by an unstable density 
     # profile. All groups of water layers where the vertical density profile is 
@@ -1490,6 +1515,7 @@ def run_hybridmodel(
     # (i.e., a layer volume weighed means of temperature and other variables are 
     # calculated for the mixed water column). This procedure is continued until 
     # the vertical density profile in the whole water column becomes neutral or stable.
+    start_time = datetime.datetime.now()  
     dens_u = calc_dens(u) 
     diff_dens_u = np.diff(dens_u) 
     diff_dens_u[abs(diff_dens_u) <= denThresh] = 0
@@ -1513,11 +1539,14 @@ def run_hybridmodel(
     mix_z[0, idn] = max_n2
     if pgdl_mode == 'on':
       um_conv[:, idn] = u
-      
+    
+    end_time = datetime.datetime.now()
+    print("convection: " + str(end_time - start_time))
       
     ## (5) ICE FORMATION
     # according to Saloranta & Andersen (2007) and ice growth due to Stefan's law
     # (Leppäranta 1991)
+    start_time = datetime.datetime.now()  
     icep  = max(dt_iceon_avg,  (dt/86400))
     x = (dt/86400) / icep
     iceT = iceT * (1 - x) + u[0] * x
@@ -1653,7 +1682,7 @@ def run_hybridmodel(
       meteo_pgdl[8, idn] = np.nanmax(area)
     
     end_time = datetime.datetime.now()
-    print((end_time - start_time))
+    print("ice: " + str(end_time - start_time))
 
 
   
