@@ -7,11 +7,77 @@ from copy import deepcopy
 import datetime
 import matplotlib.pyplot as plt
 import seaborn as sns
-
+from sklearn.preprocessing import StandardScaler
+import torch
 
 os.chdir("/home/robert/Projects/LakePIAB/src")
 from oneD_HeatMixing_Functions import get_hypsography, provide_meteorology, initial_profile, run_thermalmodel, run_hybridmodel
 
+## get normalization variables from deep learning
+device = torch.device('cpu')
+
+data_df = pd.read_csv("./../MCL/02_training/all_data_lake_modeling_in_time.csv")
+data_df = data_df.fillna('')
+time = data_df['time']
+data_df = data_df.drop(columns=['time'])
+
+m0_input_columns = ['depth', 'AirTemp_degC', 'Longwave_Wm-2', 'Latent_Wm-2', 'Sensible_Wm-2', 'Shortwave_Wm-2',
+                'lightExtinct_m-1','Area_m2', 
+                 'day_of_year', 'time_of_day', 'ice', 'snow', 'snowice', 'temp_initial00']
+m0_input_column_ix = [data_df.columns.get_loc(column) for column in m0_input_columns]
+
+data_df_scaler = data_df[data_df.columns[m0_input_column_ix]]
+
+training_frac = 0.60
+depth_steps = 25
+number_days = len(data_df_scaler)//depth_steps
+n_obs = int(number_days*training_frac)*depth_steps
+
+data = data_df_scaler.values
+
+train_data = data[:n_obs]
+test_data = data[n_obs:]
+
+train_time = time[:n_obs]
+test_time = time[n_obs:]
+
+#performing normalization on all the columns
+scaler_input = StandardScaler()
+scaler_input.fit(train_data)
+train_data = scaler_input.transform(train_data)
+
+train_mean = scaler_input.mean_
+train_std = scaler_input.scale_
+
+training_frac = 0.60
+depth_steps = 25
+number_days = len(data_df)//depth_steps
+n_obs = int(number_days*training_frac)*depth_steps
+
+#
+data = data_df.values
+
+train_data = data[:n_obs]
+test_data = data[n_obs:]
+
+train_time = time[:n_obs]
+test_time = time[n_obs:]
+
+#performing normalization on all the columns
+scaler = StandardScaler()
+scaler.fit(train_data)
+train_data = scaler.transform(train_data)
+
+train_mean = scaler.mean_
+train_std = scaler.scale_
+
+m0_output_columns = ['temp_heat01']
+m0_output_column_ix = [data_df.columns.get_loc(column) for column in m0_output_columns]
+
+std_scale = torch.tensor(train_std[m0_output_column_ix[0]]).to(device).numpy()
+mean_scale = torch.tensor(train_mean[m0_output_column_ix[0]]).to(device).numpy()
+
+                  
 ## lake configurations
 zmax = 25 # maximum lake depth
 nx = 25 # number of layers we will have
@@ -46,6 +112,8 @@ u_ini = initial_profile(initfile = '../input/observedTemp.txt', nx = nx, dx = dx
                      depth = hyps_all[1],
                      startDate = startingDate)
 
+# u_ini = u_ini * 0 + 0.5
+
 Start = datetime.datetime.now()
 
 res = run_hybridmodel(
@@ -59,6 +127,9 @@ res = run_hybridmodel(
     nx = nx,
     dt = dt,
     dx = dx,
+    std_scale = std_scale,
+    mean_scale = mean_scale,
+    scaler = scaler_input,
     daily_meteo = meteo_all[0],
     secview = meteo_all[1],
     ice = False,
@@ -143,13 +214,12 @@ plt.show()
 avgtemp_df.plot(x='time', y=['snowthickness'], color="black")
 plt.show()
 
-# heatmap of temps  
-plt.subplots(figsize=(40,40))
-sns.heatmap(temp, cmap=plt.cm.get_cmap('Spectral_r'), xticklabels=1000, yticklabels=2)
-plt.show()
-
 # heatmap of diffusivities  
 plt.subplots(figsize=(40,40))
 sns.heatmap(diff, cmap=plt.cm.get_cmap('Spectral_r'), xticklabels=1000, yticklabels=2)
 plt.show()
     
+# heatmap of temps  
+plt.subplots(figsize=(40,40))
+sns.heatmap(temp, cmap=plt.cm.get_cmap('Spectral_r'), xticklabels=1000, yticklabels=2)
+plt.show()

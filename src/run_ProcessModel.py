@@ -387,7 +387,7 @@ for date in dates:
   values = df_date['wtemp'].values
 
   # Use scipy's interp1d function to create a function for interpolating the values at different depths
-  f = interp1d(depth, values, bounds_error=False, fill_value=0)
+  f = interp1d(depth, values, bounds_error=False, fill_value=-999)
 
   # Create a list of the desired depths for interpolation
   new_depths = [i for i in range(25)]
@@ -444,3 +444,5 @@ plt.show()
 
 
 dt.to_csv('../output/py_observed_temp.csv', index=None, na_rep='NULL')
+dt.to_csv('../output/py_observed_temp.csv', index=None)
+dt.to_csv('../output/py_observed_temp.csv', index=None, na_rep='-999')

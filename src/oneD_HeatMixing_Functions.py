@@ -18,6 +18,7 @@ from collections import OrderedDict
 from tqdm import tqdm
 import warnings
 warnings.filterwarnings("ignore")
+from numba import jit
 
 ## function to calculate density from temperature
 def calc_dens(wtemp):
@@ -525,6 +526,7 @@ def latent(Tair, Twater, Uw, p2, pa, ea, RH, A, Cd = 0.0013): # evaporation / la
   latent = E
   return latent* (-1)
 
+#@jit(nopython=True)
 def run_thermalmodel(
   u, 
   startTime, 
@@ -1079,6 +1081,9 @@ def run_hybridmodel(
   dx,
   daily_meteo,
   secview,
+  std_scale,
+  mean_scale,
+  scaler,
   ice=False,
   Hi=0,
   iceT=6,
@@ -1184,7 +1189,7 @@ def run_hybridmodel(
         return len(self.X)
   
   m0_PATH =  f"./../MCL/03_finetuning/saved_models/heating_model_finetuned.pth"
-  m0_layers = [11, 32, 32, 1]
+  m0_layers = [14, 32, 32, 1]
 
   heating_model = MLP(m0_layers, activation="gelu")
   m0_checkpoint = torch.load(m0_PATH, map_location=torch.device('cpu'))
@@ -1321,44 +1326,24 @@ def run_hybridmodel(
                              #'buoyancy':np.concatenate([n2, np.array([np.nan])]),
                              'day_of_year':np.ones(25) * day_of_year_list[int(n/dt)],
                              'time_of_day':np.ones(25) * time_of_day_list[int(n/dt)],
+                             'ice':np.ones(25) * Hi,
+                             'snow':np.ones(25) * Hs,
+                             'snowice':np.ones(25) * Hsi,
                              'temp_initial':np.ones(25) * un}
                              #'diffusivity':np.ones(25) * kzn}
     input_mcl = pd.DataFrame(input_data_raw)
     input_columns = ['depth', 'AirTemp_degC', 'Longwave_Wm-2', 'Latent_Wm-2', 'Sensible_Wm-2', 'Shortwave_Wm-2',
-                'lightExtinct_m-1', 'Area_m2', 'day_of_year', 'time_of_day', 'temp_initial']
+                'lightExtinct_m-1', 'Area_m2', 'day_of_year', 'time_of_day', 
+                'ice', 'snow', 'snowice', 'temp_initial']
     
-    # print(input_mcl['AirTemp_degC'])
-    # print(input_mcl['Longwave_Wm-2'])
-    # print(input_mcl['Latent_Wm-2'])
-    # print(input_mcl['Sensible_Wm-2'])
-    # print(input_mcl['Shortwave_Wm-2'])
-    # print(input_mcl['lightExtinct_m-1'])
-    # print(input_mcl['Area_m2'])
-
-    input_column_ix = [input_mcl.columns.get_loc(column) for column in input_columns]
+    #scaler = StandardScaler()
+    #scaler.fit(input_mcl)
     
-    scaler = StandardScaler()
-    scaler.fit(input_mcl)
-    
-    input_data = scaler.transform(input_mcl)
-    
-    train_mean = scaler.mean_
-    train_std = scaler.scale_
-
-    input_mean, input_std = train_mean[input_column_ix], train_std[input_column_ix]
-    
-    # train_loader = torch.utils.data.DataLoader(input_data, batch_size=25, 
-    #                                        shuffle=False)
-    
-    # x = train_loader.to(device).float()
-    
+    input_data = scaler.transform(input_mcl)    
 
     input_data_tensor = torch.tensor(input_data, device = torch.device('cpu'))
     
     #breakpoint()
-    
-    #print(input_data_tensor.dtype)
-    #print(input_data_tensor.shape)
     
     output_tensor = heating_model(input_data_tensor.float())
     
@@ -1366,7 +1351,9 @@ def run_hybridmodel(
     
 
     #u = output_array * input_std[10] + input_mean[10]
-    u = output_array * 5.509512073633066 + 14.310124723801062
+    u = output_array * std_scale + mean_scale
+    
+    # breakpoint()
     
     u = u[:,0]
 
@@ -1374,7 +1361,7 @@ def run_hybridmodel(
     print("heating: " + str(end_time - start_time))
     
     # print(u)
-    #breakpoint()
+    breakpoint()
     
     # u[0] = (un[0] + 
     #     (Q * area[0]/(dx)*1/(4184 * calc_dens(un[0]) ) + abs(H[0+1]-H[0]) * area[0]/(dx) * 1/(4184 * calc_dens(un[0]) ) + 
@@ -1440,7 +1427,6 @@ def run_hybridmodel(
         u = np.linalg.solve(y, mn)
 
         
-    # TODO: implement / figure out this
     if scheme == 'explicit':
       u[0] = (un[0] + 
         (Q * area[0]/(dx)*1/(4184 * calc_dens(un[0]) ) + abs(H[0+1]-H[0]) * area[0]/(dx) * 1/(4184 * calc_dens(un[0]) ) + 
