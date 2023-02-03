@@ -10,7 +10,7 @@ import seaborn as sns
 
 
 os.chdir("/home/robert/Projects/LakePIAB/src")
-from oneD_HeatMixing_Functions import get_hypsography, provide_meteorology, initial_profile, run_thermalmodel, run_hybridmodel
+from oneD_HeatMixing_Functions import get_hypsography, provide_meteorology, initial_profile, run_thermalmodel, run_hybridmodel_heating, run_hybridmodel_mixing, run_thermalmodel_hendersonSellers
 
 ## lake configurations
 zmax = 25 # maximum lake depth
@@ -49,7 +49,47 @@ u_ini = initial_profile(initfile = '../input/observedTemp.txt', nx = nx, dx = dx
 Start = datetime.datetime.now()
 
     
-res = run_thermalmodel(
+# res = run_thermalmodel(
+#     u = deepcopy(u_ini),
+#     startTime = startTime, 
+#     endTime = ( startTime + total_runtime * hydrodynamic_timestep) - 1,
+#     area = hyps_all[0],
+#     volume = hyps_all[2],
+#     depth = hyps_all[1],
+#     zmax = zmax,
+#     nx = nx,
+#     dt = dt,
+#     dx = dx,
+#     daily_meteo = meteo_all[0],
+#     secview = meteo_all[1],
+#     ice = False,
+#     Hi = 0,
+#     Hs = 0,
+#     Hsi = 0,
+#     iceT = 6,
+#     supercooled = 0,
+#     scheme='implicit',
+#     kd_light = 0.8,
+#     denThresh=1e-3,
+#     albedo = 0.1,
+#     eps=0.97,
+#     emissivity=0.97,
+#     sigma=5.67e-8,
+#     sw_factor = 1.0,
+#     p2=1,
+#     B=0.61,
+#     g=9.81,
+#     Cd = 0.0013, # momentum coeff (wind)
+#     meltP=1,
+#     dt_iceon_avg=0.8,
+#     Hgeo=0.1, # geothermal heat
+#     KEice=0,
+#     Ice_min=0.1,
+#     pgdl_mode = 'on',
+#     rho_snow = 250)
+
+
+res = run_thermalmodel_hendersonSellers( # _hendersonSellers
     u = deepcopy(u_ini),
     startTime = startTime, 
     endTime = ( startTime + total_runtime * hydrodynamic_timestep) - 1,
@@ -68,26 +108,27 @@ res = run_thermalmodel(
     Hsi = 0,
     iceT = 6,
     supercooled = 0,
+    diffusion_method = 'munkAnderson',# 'hendersonSellers',
     scheme='implicit',
-    kd_light = 0.8,
+    kd_light = 0.4, # 0.4,
     denThresh=1e-3,
     albedo = 0.1,
     eps=0.97,
     emissivity=0.97,
     sigma=5.67e-8,
     sw_factor = 1.0,
+    wind_factor = 1.3,
     p2=1,
     B=0.61,
     g=9.81,
     Cd = 0.0013, # momentum coeff (wind)
     meltP=1,
     dt_iceon_avg=0.8,
-    Hgeo=0.1, # geothermal heat
+    Hgeo=0.1, # geothermal heat 0.1
     KEice=0,
     Ice_min=0.1,
     pgdl_mode = 'on',
     rho_snow = 250)
-
 
 temp=  res['temp']
 diff =  res['diff']

@@ -11,7 +11,7 @@ from sklearn.preprocessing import StandardScaler
 import torch
 
 os.chdir("/home/robert/Projects/LakePIAB/src")
-from oneD_HeatMixing_Functions import get_hypsography, provide_meteorology, initial_profile, run_thermalmodel, run_hybridmodel
+from oneD_HeatMixing_Functions import get_hypsography, provide_meteorology, initial_profile, run_thermalmodel, run_hybridmodel_heating, run_hybridmodel_mixing
 
 ## get normalization variables from deep learning
 device = torch.device('cpu')
@@ -21,9 +21,11 @@ data_df = data_df.fillna('')
 time = data_df['time']
 data_df = data_df.drop(columns=['time'])
 
-m0_input_columns = ['depth', 'AirTemp_degC', 'Longwave_Wm-2', 'Latent_Wm-2', 'Sensible_Wm-2', 'Shortwave_Wm-2',
-                'lightExtinct_m-1','Area_m2', 
-                 'day_of_year', 'time_of_day', 'ice', 'snow', 'snowice', 'temp_initial00']
+#m0_input_columns = ['depth', 'AirTemp_degC', 'Longwave_Wm-2', 'Latent_Wm-2', 'Sensible_Wm-2', 'Shortwave_Wm-2',
+ #               'lightExtinct_m-1','Area_m2', 
+  #               'day_of_year', 'time_of_day', 'ice', 'snow', 'snowice', 'temp_initial00']
+m0_input_columns = ['depth', 'ShearVelocity_mS-1', 'ShearStress_Nm-2', 'day_of_year', 'time_of_day', 
+                'ice', 'snow', 'snowice', 'temp_diff02']
 m0_input_column_ix = [data_df.columns.get_loc(column) for column in m0_input_columns]
 
 data_df_scaler = data_df[data_df.columns[m0_input_column_ix]]
@@ -49,12 +51,7 @@ train_data = scaler_input.transform(train_data)
 train_mean = scaler_input.mean_
 train_std = scaler_input.scale_
 
-training_frac = 0.60
-depth_steps = 25
-number_days = len(data_df)//depth_steps
-n_obs = int(number_days*training_frac)*depth_steps
-
-#
+# scaling for target
 data = data_df.values
 
 train_data = data[:n_obs]
@@ -71,7 +68,7 @@ train_data = scaler.transform(train_data)
 train_mean = scaler.mean_
 train_std = scaler.scale_
 
-m0_output_columns = ['temp_heat01']
+m0_output_columns = ['temp_diff02']
 m0_output_column_ix = [data_df.columns.get_loc(column) for column in m0_output_columns]
 
 std_scale = torch.tensor(train_std[m0_output_column_ix[0]]).to(device).numpy()
@@ -116,7 +113,7 @@ u_ini = initial_profile(initfile = '../input/observedTemp.txt', nx = nx, dx = dx
 
 Start = datetime.datetime.now()
 
-res = run_hybridmodel(
+res = run_hybridmodel_mixing(
     u = deepcopy(u_ini),
     startTime = startTime, 
     endTime =  (startTime + total_runtime * hydrodynamic_timestep) - 1,
@@ -130,6 +127,7 @@ res = run_hybridmodel(
     std_scale = std_scale,
     mean_scale = mean_scale,
     scaler = scaler_input,
+    test_input = data_df_scaler.head(n=25),
     daily_meteo = meteo_all[0],
     secview = meteo_all[1],
     ice = False,

@@ -10,7 +10,7 @@ import seaborn as sns
 from numba import jit
 
 os.chdir("/home/robert/Projects/LakePIAB/src")
-from oneD_HeatMixing_Functions import get_hypsography, provide_meteorology, initial_profile, run_thermalmodel, run_hybridmodel
+from oneD_HeatMixing_Functions import get_hypsography, provide_meteorology, initial_profile, run_thermalmodel, run_hybridmodel_heating, run_hybridmodel_mixing, run_thermalmodel_hendersonSellers
 
 ## lake configurations
 zmax = 25 # maximum lake depth
@@ -28,7 +28,7 @@ meteo_all = provide_meteorology(meteofile = '../input/Mendota_2002.csv',
                     windfactor = 1.0)
                      
 hydrodynamic_timestep = 24 * dt
-total_runtime =  365 * 1 # 14 * 365
+total_runtime =  365 * 2 # 14 * 365
 startTime = 1#150 * 24 * 3600
 endTime =  (startTime + total_runtime * hydrodynamic_timestep) - 1
 
@@ -49,7 +49,7 @@ u_ini = initial_profile(initfile = '../input/observedTemp.txt', nx = nx, dx = dx
 Start = datetime.datetime.now()
 
     
-res = run_thermalmodel(
+res = run_thermalmodel_hendersonSellers( # _hendersonSellers
     u = deepcopy(u_ini),
     startTime = startTime, 
     endTime = ( startTime + total_runtime * hydrodynamic_timestep) - 1,
@@ -68,21 +68,23 @@ res = run_thermalmodel(
     Hsi = 0,
     iceT = 6,
     supercooled = 0,
+    diffusion_method = 'munkAnderson',# 'hendersonSellers',
     scheme='implicit',
-    kd_light = 0.8,
+    kd_light = 0.4, # 0.4,
     denThresh=1e-3,
     albedo = 0.1,
     eps=0.97,
     emissivity=0.97,
     sigma=5.67e-8,
     sw_factor = 1.0,
+    wind_factor = 1.3,
     p2=1,
     B=0.61,
     g=9.81,
     Cd = 0.0013, # momentum coeff (wind)
     meltP=1,
     dt_iceon_avg=0.8,
-    Hgeo=0.1, # geothermal heat
+    Hgeo=0.1, # geothermal heat 0.1
     KEice=0,
     Ice_min=0.1,
     pgdl_mode = 'on',
@@ -151,4 +153,53 @@ plt.show()
 # heatmap of diffusivities  
 plt.subplots(figsize=(40,40))
 sns.heatmap(diff, cmap=plt.cm.get_cmap('Spectral_r'), xticklabels=1000, yticklabels=2)
+plt.show()
+
+# compare to observed data
+
+df1 = pd.DataFrame(times)
+df1.columns = ['time']
+t1 = np.matrix(temp)
+t1 = t1.getT()
+df2 = pd.DataFrame(t1)
+df_simulated = pd.concat([df1, df2], axis = 1)
+
+df = pd.read_csv('../output/NTL_observed_temp.csv')
+df['datetime'] 
+df['datetime'] = pd.to_datetime(df['datetime_str'], format='%Y-%m-%d %H')
+
+# surface
+df_1m_observed = df[df['depth'] == 1]
+df_1m_observed = df_1m_observed[df_1m_observed['datetime'] <= '2009-01-01 00:00:00']
+
+df_1m_simulated = df_simulated.iloc[:, 1]
+df1 = pd.DataFrame(times)
+df1.columns = ['datetime']
+t1 = np.matrix(df_1m_simulated)
+t1 = t1.getT()
+df2 = pd.DataFrame(t1)
+df2.columns= ['wtemp']
+df_1m_simulated = pd.concat([df1, df2], axis = 1)
+
+fig=plt.figure()
+ax = df_1m_observed.plot(x='datetime', y=['wtemp'], color="black", style = '.')
+df_1m_simulated.plot(x='datetime', y=['wtemp'], color="blue", ax = ax)
+plt.show()
+
+# bottom
+df_20m_observed = df[df['depth'] == 20]
+df_20m_observed = df_20m_observed[df_20m_observed['datetime'] <= '2009-01-01 00:00:00']
+
+df_20m_simulated = df_simulated.iloc[:, 40]
+df1 = pd.DataFrame(times)
+df1.columns = ['datetime']
+t1 = np.matrix(df_20m_simulated)
+t1 = t1.getT()
+df2 = pd.DataFrame(t1)
+df2.columns= ['wtemp']
+df_20m_simulated = pd.concat([df1, df2], axis = 1)
+
+fig=plt.figure()
+ax = df_20m_observed.plot(x='datetime', y=['wtemp'], color="black", style = '.')
+df_20m_simulated.plot(x='datetime', y=['wtemp'], color="blue", ax = ax)
 plt.show()
