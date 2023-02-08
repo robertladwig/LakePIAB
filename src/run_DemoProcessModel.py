@@ -45,7 +45,7 @@ meteo_all = provide_meteorology(meteofile = '../input/Mendota_2002.csv',
                     windfactor = 1.0)
                      
 hydrodynamic_timestep = 24 * dt
-total_runtime =  365 * 6 # 14 * 365
+total_runtime =  365 * 1 # 14 * 365
 startTime = 1#150 * 24 * 3600
 endTime =  (startTime + total_runtime * hydrodynamic_timestep) - 1
 
@@ -66,7 +66,7 @@ u_ini = initial_profile(initfile = '../input/observedTemp.txt', nx = nx, dx = dx
 Start = datetime.datetime.now()
 
     
-res = run_thermalmodel( # _hendersonSellers
+res = run_thermalmodel( #run_thermalmodel_hendersonSellers 
     u = deepcopy(u_ini),
     startTime = startTime, 
     endTime = ( startTime + total_runtime * hydrodynamic_timestep) - 1,
@@ -165,31 +165,6 @@ plt.show()
 
 # heatmap of temps  
 plt.subplots(figsize=(140,80))
-sns.heatmap(temp_initial, cmap=plt.cm.get_cmap('Spectral_r'), xticklabels=1000, yticklabels=2)
-plt.show()
-
-# heatmap of temps  
-plt.subplots(figsize=(140,80))
-sns.heatmap(temp_heat, cmap=plt.cm.get_cmap('Spectral_r'), xticklabels=1000, yticklabels=2)
-plt.show()
-
-# heatmap of temps  
-plt.subplots(figsize=(140,80))
-sns.heatmap(temp_diff, cmap=plt.cm.get_cmap('Spectral_r'), xticklabels=1000, yticklabels=2)
-plt.show()
-
-# heatmap of temps  
-plt.subplots(figsize=(140,80))
-sns.heatmap(temp_conv, cmap=plt.cm.get_cmap('Spectral_r'), xticklabels=1000, yticklabels=2)
-plt.show()
-
-# heatmap of temps  
-plt.subplots(figsize=(140,80))
-sns.heatmap(temp_ice, cmap=plt.cm.get_cmap('Spectral_r'), xticklabels=1000, yticklabels=2)
-plt.show()
-
-# heatmap of temps  
-plt.subplots(figsize=(140,80))
 sns.heatmap(temp, cmap=plt.cm.get_cmap('Spectral_r'), xticklabels=1000, yticklabels=2)
 plt.show()
 
@@ -198,7 +173,7 @@ plt.subplots(figsize=(140,80))
 sns.heatmap(diff, cmap=plt.cm.get_cmap('Spectral_r'), xticklabels=1000, yticklabels=2)
 plt.show()
 
-time_step = 180 * 24 
+time_step = 210 * 24 
 fig=plt.figure()
 plt.plot(temp_initial[:,time_step], hyps_all[1], color="black")
 plt.plot(temp_heat[:,time_step], hyps_all[1],color="red")

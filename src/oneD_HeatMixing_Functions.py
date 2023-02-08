@@ -28,7 +28,7 @@ def calc_dens(wtemp):
     return dens
 
 ## this is our attempt for turbulence closure, estimating eddy diffusivity
-def eddy_diffusivity(rho, depth, g, rho_0, ice, area):
+def eddy_diffusivity(rho, depth, g, rho_0, ice, area, T):
     km = 1.4 * 10**(-7)
     
     buoy = np.ones(len(depth)) * 7e-5
@@ -44,10 +44,15 @@ def eddy_diffusivity(rho, depth, g, rho_0, ice, area):
       ak = 0.00706 *( max(area)/1E6)**(0.56)
     
     kz = ak * (buoy)**(-0.43)
+    
+    if (np.mean(T) <= 5):
+        kz = kz * 1000
+
+    
     return(kz + km)
 
 ## this is our attempt for turbulence closure, estimating eddy diffusivity
-def eddy_diffusivity_hendersonSellers(rho, depth, g, rho_0, ice, area, U10, latitude):
+def eddy_diffusivity_hendersonSellers(rho, depth, g, rho_0, ice, area, U10, latitude, T):
     k = 0.4
     Pr = 1.0
     z0 = 0.0002
@@ -79,12 +84,16 @@ def eddy_diffusivity_hendersonSellers(rho, depth, g, rho_0, ice, area, U10, lati
       ak = 0.000898
     else:
       ak = 0.00706 *( max(area)/1E6)**(0.56)
+      
+    if (np.mean(T) <= 5):
+        kz = kz * 1000
+
     
     # kz = ak * (buoy)**(-0.43)
     return(kz +  km)
 
 ## this is our attempt for turbulence closure, estimating eddy diffusivity
-def eddy_diffusivity_munkAnderson(rho, depth, g, rho_0, ice, area, U10, latitude, Cd):
+def eddy_diffusivity_munkAnderson(rho, depth, g, rho_0, ice, area, U10, latitude, Cd, T):
     k = 0.4
     Pr = 1.0
     z0 = 0.0002
@@ -122,14 +131,26 @@ def eddy_diffusivity_munkAnderson(rho, depth, g, rho_0, ice, area, U10, latitude
     low_values_flags = buoy < 7e-5  # Where values are low
     buoy[low_values_flags] = 7e-5
     
+    s_bg = 2 * 10**(-7)
+    s_seiche = 0.7 * buoy
+    # (uf./(kappa*z_edge).*exp(-ks*z_edge)).^2; 
+    s_wall = (w_star / (k * np.array(depth)) * np.exp(k_star * np.array(depth)))**2
+    s_wall =w_star/ (k * np.array(depth) *np.array(rho))
+    
+    
+    X_HS = np.array(buoy)/(s_wall**2 + s_bg + s_seiche)
+    Ri=(-1+(1+40*X_HS)**0.5)/20
     
     #breakpoint()
-    Ri = (-1 + (1 + 40 * np.array(buoy) * k**2 * np.array(depth)**2 / 
-               (w_star**2 * np.exp(-2 * k_star * np.array(depth))))**(1/2)) / 20
+    #Ri = (-1 + (1 + 40 * np.array(buoy) * k**2 * np.array(depth)**2 / 
+    #           (w_star**2 * np.exp(-2 * k_star * np.array(depth))))**(1/2)) / 20
     
-    kz = (k * w_star * np.array(depth)) * np.exp(-k_star * np.array(depth)) * (1.0 / (1 + alpha * Ri)**beta)
+    f_HS = (1.0 / (1 + alpha * Ri)**beta)
+    f_HS[Ri == 0] = 1
     
-    # modify according to Sebastiano
+    kz = (k * w_star * np.array(depth)) * np.exp(-k_star * np.array(depth)) * f_HS
+    
+    # modify according to Ekman layer depth
     
     tau_w = rho_a * Cd * U2**2
     u_star = sqrt(tau_w / rho_0)
@@ -139,10 +160,40 @@ def eddy_diffusivity_munkAnderson(rho, depth, g, rho_0, ice, area, U10, latitude
     W_eff = e_w / (xi * sqrt(Cd))
     kz_ekman = 1/f * (rho_a / rho_0 * Cd / kullenberg)**2 * W_eff**2
     
-    kz[depth < H_ekman] = kz_ekman
-    
+    #kz[depth < H_ekman/2] = kz_ekman * 100
+    if (np.mean(T) <= 5):
+        kz = kz * 1000
+
 
     return(kz +  km)
+
+def crank_nicholson(T, dz, dt, kappa):
+    # number of grid points
+    
+    #breakpoint()
+    nz = T.shape[0]
+
+    # time step coefficient
+    alpha = kappa * dt / dz**2
+
+    # tridiagonal matrix for implicit Crank-Nicholson
+    A = np.zeros((nz, nz))
+    for i in range(1, nz-1):
+        A[i, i-1] = -alpha[i]/2
+        A[i, i] = 1 + alpha[i]
+        A[i, i+1] = -alpha[i]/2
+    
+    # Boundary conditions
+    A[0,0] = 1
+    A[0,1] = 0
+    A[-1,-1] = 1
+    A[-1,-2] = 0
+    
+
+    b = T + alpha/2 * np.concatenate(([0], T[1:-1], [0]))
+    T = np.linalg.solve(A, b)
+        
+    return T
   
 def provide_meteorology(meteofile, secchifile, windfactor):
 
@@ -748,7 +799,7 @@ def run_thermalmodel(
       n2_pgdl[:,idn] = np.concatenate([n2, np.array([np.nan])])
       um_initial[:, idn] = u
       
-    kz = eddy_diffusivity(dens_u_n2, depth, 9.81, np.mean(dens_u_n2) , ice, area) / 86400
+    kz = eddy_diffusivity(dens_u_n2, depth, 9.81, np.mean(dens_u_n2) , ice, area, u) / 86400
     
 
     if ice and Tair(n) <= 0:
@@ -1347,9 +1398,9 @@ def run_thermalmodel_hendersonSellers(
         
     ## (2) DIFFUSION
     if diffusion_method == 'hendersonSellers':
-        kz = eddy_diffusivity_hendersonSellers(dens_u_n2, depth, 9.81, np.mean(dens_u_n2) , ice, area, wind_mixing,  43.100948) / 1
+        kz = eddy_diffusivity_hendersonSellers(dens_u_n2, depth, 9.81, np.mean(dens_u_n2) , ice, area, wind_mixing,  43.100948, u) / 1
     elif diffusion_method == 'munkAnderson':
-        kz = eddy_diffusivity_munkAnderson(dens_u_n2, depth, 9.81, np.mean(dens_u_n2) , ice, area, wind_mixing,  43.100948, Cd) / 1
+        kz = eddy_diffusivity_munkAnderson(dens_u_n2, depth, 9.81, np.mean(dens_u_n2) , ice, area, wind_mixing,  43.100948, Cd, u) / 1
     
     
 
@@ -1407,7 +1458,10 @@ def run_thermalmodel_hendersonSellers(
     
         #breakpoint()
 
+        #breakpoint()
         u = np.linalg.solve(y, mn)
+        
+        #u = crank_nicholson(T = un, dz = dx, dt = dt, kappa = kzn)
 
         
     # TODO: implement / figure out this
@@ -1933,7 +1987,7 @@ def run_hybridmodel_heating(
       n2_pgdl[:,idn] = np.concatenate([n2, np.array([np.nan])])
       um_initial[:, idn] = u
       
-    kz = eddy_diffusivity(dens_u_n2, depth, 9.81, np.mean(dens_u_n2) , ice, area) / 86400
+    kz = eddy_diffusivity(dens_u_n2, depth, 9.81, np.mean(dens_u_n2) , ice, area, u) / 86400
     
 
     if ice and Tair(n) <= 0:
@@ -2614,7 +2668,7 @@ def run_hybridmodel_mixing(
       n2_pgdl[:,idn] = np.concatenate([n2, np.array([np.nan])])
       um_initial[:, idn] = u
       
-    kz = eddy_diffusivity(dens_u_n2, depth, 9.81, np.mean(dens_u_n2) , ice, area) / 86400
+    kz = eddy_diffusivity(dens_u_n2, depth, 9.81, np.mean(dens_u_n2) , ice, area, u) / 86400
     
 
     if ice and Tair(n) <= 0:
