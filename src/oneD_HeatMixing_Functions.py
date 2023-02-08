@@ -84,7 +84,7 @@ def eddy_diffusivity_hendersonSellers(rho, depth, g, rho_0, ice, area, U10, lati
     return(kz +  km)
 
 ## this is our attempt for turbulence closure, estimating eddy diffusivity
-def eddy_diffusivity_munkAnderson(rho, depth, g, rho_0, ice, area, U10, latitude):
+def eddy_diffusivity_munkAnderson(rho, depth, g, rho_0, ice, area, U10, latitude, Cd):
     k = 0.4
     Pr = 1.0
     z0 = 0.0002
@@ -92,11 +92,13 @@ def eddy_diffusivity_munkAnderson(rho, depth, g, rho_0, ice, area, U10, latitude
     rho_a = 1.2
     alpha = 10/3
     beta = 3/2
+    f = 1 * 10 **(-4)
+    xi = 1/3
+    kullenberg = 2 * 10**(-2)
     
     U2 = U10 * (log((2 - 1e-5)/z0)) / (log((10 - 1e-5)/z0))
     U2 = U10
     
-    Cd = 0.0013
     if U2 < 2.2:
         Cd = 1.08 * U2**(-0.15)* 10**(-3)
     elif 2.2 <= U2 < 5.0:
@@ -127,12 +129,19 @@ def eddy_diffusivity_munkAnderson(rho, depth, g, rho_0, ice, area, U10, latitude
     
     kz = (k * w_star * np.array(depth)) * np.exp(-k_star * np.array(depth)) * (1.0 / (1 + alpha * Ri)**beta)
     
-    if ice == True:
-      ak = 0.000898
-    else:
-      ak = 0.00706 *( max(area)/1E6)**(0.56)
+    # modify according to Sebastiano
     
-    # kz = ak * (buoy)**(-0.43)
+    tau_w = rho_a * Cd * U2**2
+    u_star = sqrt(tau_w / rho_0)
+    H_ekman = 0.4 * u_star / f
+    
+    e_w = xi * sqrt(Cd) * U2
+    W_eff = e_w / (xi * sqrt(Cd))
+    kz_ekman = 1/f * (rho_a / rho_0 * Cd / kullenberg)**2 * W_eff**2
+    
+    kz[depth < H_ekman] = kz_ekman
+    
+
     return(kz +  km)
   
 def provide_meteorology(meteofile, secchifile, windfactor):
@@ -643,6 +652,7 @@ def run_thermalmodel(
   emissivity=0.97,
   sigma=5.67e-8,
   sw_factor = 1.0,
+  wind_factor = 1.0,
   p2=1,
   B=0.61,
   g=9.81,
@@ -678,7 +688,7 @@ def run_thermalmodel(
   ea_fillvals = tuple(daily_meteo.ea.values[[0,-1]])
   ea = interp1d(daily_meteo.dt.values, daily_meteo.ea.values, kind = "linear", fill_value=ea_fillvals, bounds_error=False)
   Uw_fillvals = tuple(daily_meteo.Ten_Meter_Elevation_Wind_Speed_meterPerSecond.values[[0, -1]])
-  Uw = interp1d(daily_meteo.dt.values, daily_meteo.Ten_Meter_Elevation_Wind_Speed_meterPerSecond.values, kind = "linear", fill_value=Uw_fillvals, bounds_error=False)
+  Uw = interp1d(wind_factor * daily_meteo.dt.values, daily_meteo.Ten_Meter_Elevation_Wind_Speed_meterPerSecond.values, kind = "linear", fill_value=Uw_fillvals, bounds_error=False)
   CC_fillvals = tuple(daily_meteo.Cloud_Cover.values[[0,-1]])
   CC = interp1d(daily_meteo.dt.values, daily_meteo.Cloud_Cover.values, kind = "linear", fill_value=CC_fillvals, bounds_error=False)
   Pa_fillvals = tuple(daily_meteo.Surface_Level_Barometric_Pressure_pascal.values[[0,-1]])
@@ -1281,21 +1291,15 @@ def run_thermalmodel_hendersonSellers(
       n2_pgdl[:,idn] = np.concatenate([n2, np.array([np.nan])])
       um_initial[:, idn] = u
       
-    kz = eddy_diffusivity(dens_u_n2, depth, 9.81, np.mean(dens_u_n2) , ice, area) / 86400
-    
-    kz = eddy_diffusivity_hendersonSellers(dens_u_n2, depth, 9.81, np.mean(dens_u_n2) , ice, area, Uw(n),  43.100948) / 86400
-    
+
 
     if ice and Tair(n) <= 0:
-      kzn = kz
       albedo = 0.3
       IceSnowAttCoeff = exp(-kd_ice * Hi) * exp(-kd_snow * (rho_fw/rho_snow)* Hs)
     elif (ice and Tair(n) >= 0):
-      kzn = kz
       albedo = 0.3
       IceSnowAttCoeff = exp(-kd_ice * Hi) * exp(-kd_snow * (rho_fw/rho_snow)* Hs)
     elif not ice:
-      kzn = kz
       albedo = 0.1
       IceSnowAttCoeff = 1
     
@@ -1336,12 +1340,16 @@ def run_thermalmodel_hendersonSellers(
     end_time = datetime.datetime.now()
     print("heating: " + str(end_time - start_time))
 
-    
+    if ice:
+        wind_mixing = Uw(n)
+    else:
+        wind_mixing = Uw(n)
+        
     ## (2) DIFFUSION
     if diffusion_method == 'hendersonSellers':
-        kz = eddy_diffusivity_hendersonSellers(dens_u_n2, depth, 9.81, np.mean(dens_u_n2) , ice, area, Uw(n),  43.100948) / 1
+        kz = eddy_diffusivity_hendersonSellers(dens_u_n2, depth, 9.81, np.mean(dens_u_n2) , ice, area, wind_mixing,  43.100948) / 1
     elif diffusion_method == 'munkAnderson':
-        kz = eddy_diffusivity_munkAnderson(dens_u_n2, depth, 9.81, np.mean(dens_u_n2) , ice, area, Uw(n),  43.100948) / 1
+        kz = eddy_diffusivity_munkAnderson(dens_u_n2, depth, 9.81, np.mean(dens_u_n2) , ice, area, wind_mixing,  43.100948, Cd) / 1
     
     
 
@@ -1392,10 +1400,12 @@ def run_thermalmodel_hendersonSellers(
         mn[0] = u[0]
         mn[len(mn)-1] = u[len(u)-1]
         
-        for k in range(1,j-2):
+        for k in range(1,j-1):
             mn[k] = alpha[k] * u[k-1] + 2 * (1 - alpha[k]) * u[k] + alpha[k] * u[k+1]
 
     # DERIVED TEMPERATURE OUTPUT FOR NEXT MODULE
+    
+        #breakpoint()
 
         u = np.linalg.solve(y, mn)
 

@@ -15,6 +15,23 @@ from oneD_HeatMixing_Functions import get_hypsography, provide_meteorology, init
 ## lake configurations
 zmax = 25 # maximum lake depth
 nx = 25 * 2 # number of layers we will have
+dt = 3600 # 24 hours times 60 min/hour times 60 seconds/minimport numpy as np
+import pandas as pd
+import os
+from math import pi, exp, sqrt
+from scipy.interpolate import interp1d
+from copy import deepcopy
+import datetime
+import matplotlib.pyplot as plt
+import seaborn as sns
+from numba import jit
+
+os.chdir("/home/robert/Projects/LakePIAB/src")
+from oneD_HeatMixing_Functions import get_hypsography, provide_meteorology, initial_profile, run_thermalmodel, run_hybridmodel_heating, run_hybridmodel_mixing, run_thermalmodel_hendersonSellers
+
+## lake configurations
+zmax = 25 # maximum lake depth
+nx = 25 * 2 # number of layers we will have
 dt = 3600 # 24 hours times 60 min/hour times 60 seconds/min
 dx = zmax/nx # spatial step
 
@@ -28,7 +45,7 @@ meteo_all = provide_meteorology(meteofile = '../input/Mendota_2002.csv',
                     windfactor = 1.0)
                      
 hydrodynamic_timestep = 24 * dt
-total_runtime =  365 * 2 # 14 * 365
+total_runtime =  365 * 6 # 14 * 365
 startTime = 1#150 * 24 * 3600
 endTime =  (startTime + total_runtime * hydrodynamic_timestep) - 1
 
@@ -49,7 +66,7 @@ u_ini = initial_profile(initfile = '../input/observedTemp.txt', nx = nx, dx = dx
 Start = datetime.datetime.now()
 
     
-res = run_thermalmodel_hendersonSellers( # _hendersonSellers
+res = run_thermalmodel( # _hendersonSellers
     u = deepcopy(u_ini),
     startTime = startTime, 
     endTime = ( startTime + total_runtime * hydrodynamic_timestep) - 1,
@@ -68,7 +85,7 @@ res = run_thermalmodel_hendersonSellers( # _hendersonSellers
     Hsi = 0,
     iceT = 6,
     supercooled = 0,
-    diffusion_method = 'munkAnderson',# 'hendersonSellers',
+    #diffusion_method = 'munkAnderson',# 'hendersonSellers',
     scheme='implicit',
     kd_light = 0.4, # 0.4,
     denThresh=1e-3,
@@ -118,6 +135,7 @@ avgtemp_df.insert(2, "snowicethickness", snowicethickness[0,], True)
 End = datetime.datetime.now()
 print(End - Start)
 
+    
 # epi/hypo/total
 colors = ['#F8766D', '#00BA38', '#619CFF']
 avgtemp_df.plot(x='time', y=['epi', 'hypo', 'tot'], color=colors, kind='line')
@@ -146,13 +164,53 @@ avgtemp_df.plot(x='time', y=['snowthickness'], color="black")
 plt.show()
 
 # heatmap of temps  
-plt.subplots(figsize=(40,40))
+plt.subplots(figsize=(140,80))
+sns.heatmap(temp_initial, cmap=plt.cm.get_cmap('Spectral_r'), xticklabels=1000, yticklabels=2)
+plt.show()
+
+# heatmap of temps  
+plt.subplots(figsize=(140,80))
+sns.heatmap(temp_heat, cmap=plt.cm.get_cmap('Spectral_r'), xticklabels=1000, yticklabels=2)
+plt.show()
+
+# heatmap of temps  
+plt.subplots(figsize=(140,80))
+sns.heatmap(temp_diff, cmap=plt.cm.get_cmap('Spectral_r'), xticklabels=1000, yticklabels=2)
+plt.show()
+
+# heatmap of temps  
+plt.subplots(figsize=(140,80))
+sns.heatmap(temp_conv, cmap=plt.cm.get_cmap('Spectral_r'), xticklabels=1000, yticklabels=2)
+plt.show()
+
+# heatmap of temps  
+plt.subplots(figsize=(140,80))
+sns.heatmap(temp_ice, cmap=plt.cm.get_cmap('Spectral_r'), xticklabels=1000, yticklabels=2)
+plt.show()
+
+# heatmap of temps  
+plt.subplots(figsize=(140,80))
 sns.heatmap(temp, cmap=plt.cm.get_cmap('Spectral_r'), xticklabels=1000, yticklabels=2)
 plt.show()
 
 # heatmap of diffusivities  
-plt.subplots(figsize=(40,40))
+plt.subplots(figsize=(140,80))
 sns.heatmap(diff, cmap=plt.cm.get_cmap('Spectral_r'), xticklabels=1000, yticklabels=2)
+plt.show()
+
+time_step = 180 * 24 
+fig=plt.figure()
+plt.plot(temp_initial[:,time_step], hyps_all[1], color="black")
+plt.plot(temp_heat[:,time_step], hyps_all[1],color="red")
+plt.plot(temp_diff[:,time_step], hyps_all[1],color="red")
+plt.plot(temp_conv[:,time_step], hyps_all[1],color="green")
+plt.plot(temp_ice[:,time_step], hyps_all[1],color="blue")
+plt.gca().invert_yaxis()
+plt.show()
+
+fig=plt.figure()
+plt.plot(diff[:,time_step], hyps_all[1], color="black")
+plt.gca().invert_yaxis()
 plt.show()
 
 # compare to observed data
@@ -170,7 +228,7 @@ df['datetime'] = pd.to_datetime(df['datetime_str'], format='%Y-%m-%d %H')
 
 # surface
 df_1m_observed = df[df['depth'] == 1]
-df_1m_observed = df_1m_observed[df_1m_observed['datetime'] <= '2009-01-01 00:00:00']
+df_1m_observed = df_1m_observed[df_1m_observed['datetime'] <= '2012-01-01 00:00:00']
 
 df_1m_simulated = df_simulated.iloc[:, 1]
 df1 = pd.DataFrame(times)
@@ -188,9 +246,28 @@ plt.show()
 
 # bottom
 df_20m_observed = df[df['depth'] == 20]
-df_20m_observed = df_20m_observed[df_20m_observed['datetime'] <= '2009-01-01 00:00:00']
+df_20m_observed = df_20m_observed[df_20m_observed['datetime'] <= '2012-01-01 00:00:00']
 
 df_20m_simulated = df_simulated.iloc[:, 40]
+df1 = pd.DataFrame(times)
+df1.columns = ['datetime']
+t1 = np.matrix(df_20m_simulated)
+t1 = t1.getT()
+df2 = pd.DataFrame(t1)
+df2.columns= ['wtemp']
+df_20m_simulated = pd.concat([df1, df2], axis = 1)
+
+fig=plt.figure()
+ax = df_20m_observed.plot(x='datetime', y=['wtemp'], color="black", style = '.')
+df_20m_simulated.plot(x='datetime', y=['wtemp'], color="blue", ax = ax)
+plt.show()
+
+
+# middle
+df_20m_observed = df[df['depth'] == 10]
+df_20m_observed = df_20m_observed[df_20m_observed['datetime'] <= '2012-01-01 00:00:00']
+
+df_20m_simulated = df_simulated.iloc[:, 19]
 df1 = pd.DataFrame(times)
 df1.columns = ['datetime']
 t1 = np.matrix(df_20m_simulated)

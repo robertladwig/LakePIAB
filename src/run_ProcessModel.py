@@ -190,6 +190,11 @@ plt.subplots(figsize=(40,40))
 sns.heatmap(temp, cmap=plt.cm.get_cmap('Spectral_r'), xticklabels=1000, yticklabels=2)
 plt.show()
 
+# heatmap of temps  
+plt.subplots(figsize=(40,40))
+sns.heatmap(temp_diff, cmap=plt.cm.get_cmap('Spectral_r'), xticklabels=1000, yticklabels=2)
+plt.show()
+
 # heatmap of diffusivities  
 plt.subplots(figsize=(40,40))
 sns.heatmap(diff, cmap=plt.cm.get_cmap('Spectral_r'), xticklabels=1000, yticklabels=2)
