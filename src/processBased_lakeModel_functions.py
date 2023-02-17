@@ -1201,7 +1201,7 @@ def run_thermalmodel(
   um_conv = np.full([nx, nCol], np.nan)
   um_ice = np.full([nx, nCol], np.nan)
   n2m = np.full([nx, nCol], np.nan)
-  meteo_pgdl = np.full([9, nCol], np.nan)
+  meteo_pgdl = np.full([20, nCol], np.nan)
   
   if not kd_light is None:
     def kd(n): # using this shortcut for now / testing if it works
@@ -1347,13 +1347,6 @@ def run_thermalmodel(
     Hsm[0,idn] = Hs
     Hsim[0,idn] = Hsi
     
-    # print( um_heat[:, idn] )
-    # print( um_diff[:, idn] )
-    # print( um_mix[:, idn] )
-    # print( um_conv[:, idn] )
-    # print( um[:, idn] )
-    # breakpoint()
-    
     
     meteo_pgdl[0, idn] = heating_res['air_temp']
     meteo_pgdl[1, idn] = heating_res['longwave_flux']
@@ -1364,6 +1357,17 @@ def run_thermalmodel(
     meteo_pgdl[6, idn] = mixing_res['shear']
     meteo_pgdl[7, idn] = mixing_res['tau']
     meteo_pgdl[8, idn] = np.nanmax(area)
+    meteo_pgdl[9, idn] = CC(n)
+    meteo_pgdl[10, idn] = ea(n)
+    meteo_pgdl[11, idn] = Jlw(n)
+    meteo_pgdl[12, idn] = Uw(n)
+    meteo_pgdl[13, idn] = Pa(n)
+    meteo_pgdl[14, idn] = RH(n)
+    meteo_pgdl[15, idn] = PP(n)
+    meteo_pgdl[16, idn] = heating_res['IceSnowAttCoeff']
+    meteo_pgdl[17, idn] = ice_res['iceFlag']
+    meteo_pgdl[18, idn] = ice_res['icemovAvg']
+    meteo_pgdl[19, idn] = ice_res['density_snow']
     
     n2 = 9.81/np.mean(dens_u_n2) * (dens_u_n2[1:] - dens_u_n2[:-1])/dx
     n2m[:,idn] = np.concatenate([n2, np.array([np.nan])])

@@ -10,7 +10,8 @@ import seaborn as sns
 
 
 os.chdir("/home/robert/Projects/LakePIAB/src")
-from oneD_HeatMixing_Functions import get_hypsography, provide_meteorology, initial_profile, run_thermalmodel, run_hybridmodel_heating, run_hybridmodel_mixing, run_thermalmodel_v1
+# from oneD_HeatMixing_Functions import get_hypsography, provide_meteorology, initial_profile, run_thermalmodel_v1, run_hybridmodel_heating, run_hybridmodel_mixing, run_thermalmodel_v2
+from processBased_lakeModel_functions import get_hypsography, provide_meteorology, initial_profile, run_thermalmodel, run_thermalmodel, heating_module, diffusion_module, mixing_module, convection_module, ice_module
 
 ## lake configurations
 zmax = 25 # maximum lake depth
@@ -28,7 +29,7 @@ meteo_all = provide_meteorology(meteofile = '../input/Mendota_2002.csv',
                     windfactor = 1.0)
                      
 hydrodynamic_timestep = 24 * dt
-total_runtime =  365 *14 # 14 * 365
+total_runtime =  365 *2 # 14 * 365
 startTime = 1#150 * 24 * 3600
 endTime =  (startTime + total_runtime * hydrodynamic_timestep) - 1
 
@@ -49,47 +50,7 @@ u_ini = initial_profile(initfile = '../input/observedTemp.txt', nx = nx, dx = dx
 Start = datetime.datetime.now()
 
     
-# res = run_thermalmodel(
-#     u = deepcopy(u_ini),
-#     startTime = startTime, 
-#     endTime = ( startTime + total_runtime * hydrodynamic_timestep) - 1,
-#     area = hyps_all[0],
-#     volume = hyps_all[2],
-#     depth = hyps_all[1],
-#     zmax = zmax,
-#     nx = nx,
-#     dt = dt,
-#     dx = dx,
-#     daily_meteo = meteo_all[0],
-#     secview = meteo_all[1],
-#     ice = False,
-#     Hi = 0,
-#     Hs = 0,
-#     Hsi = 0,
-#     iceT = 6,
-#     supercooled = 0,
-#     scheme='implicit',
-#     kd_light = 0.8,
-#     denThresh=1e-3,
-#     albedo = 0.1,
-#     eps=0.97,
-#     emissivity=0.97,
-#     sigma=5.67e-8,
-#     sw_factor = 1.0,
-#     p2=1,
-#     B=0.61,
-#     g=9.81,
-#     Cd = 0.0013, # momentum coeff (wind)
-#     meltP=1,
-#     dt_iceon_avg=0.8,
-#     Hgeo=0.1, # geothermal heat
-#     KEice=0,
-#     Ice_min=0.1,
-#     pgdl_mode = 'on',
-#     rho_snow = 250)
-
-
-res = run_thermalmodel( #run_thermalmodel_hendersonSellers 
+res = run_thermalmodel(  
     u = deepcopy(u_ini),
     startTime = startTime, 
     endTime = ( startTime + total_runtime * hydrodynamic_timestep) - 1,
@@ -110,7 +71,6 @@ res = run_thermalmodel( #run_thermalmodel_hendersonSellers
     supercooled = 0,
     diffusion_method = 'hondzoStefan',# 'hendersonSellers', 'munkAnderson' 'hondzoStefan'
     scheme='implicit',
-    mixing = 1,
     kd_light = 0.4, # 0.4,
     denThresh=1e-3,
     albedo = 0.1,
@@ -118,7 +78,7 @@ res = run_thermalmodel( #run_thermalmodel_hendersonSellers
     emissivity=0.97,
     sigma=5.67e-8,
     sw_factor = 1.0,
-    wind_factor = 1.3,
+    wind_factor = 1.0,
     p2=1,
     B=0.61,
     g=9.81,
@@ -141,14 +101,10 @@ temp_mix =  res['temp_mix']
 temp_conv =  res['temp_conv']
 temp_ice=  res['temp_ice']
 meteo=  res['meteo_input']
-buoyancy = res['buoyancy_pgdl']
-td_depth= res['thermoclinedepth']
-heatflux_lwsl= res['heatflux_lwsl']
-heatflux_sw= res['heatflux_sw']
+buoyancy = res['buoyancy']
 icethickness= res['icethickness']
 snowthickness= res['snowthickness']
 snowicethickness= res['snowicethickness']
-similarity = res['similarity']
 
 # convert averages from array to data frame
 avgtemp_df = pd.DataFrame(avgtemp, columns=["time", "thermoclineDep", "epi", "hypo", "tot", "stratFlag"])
@@ -201,13 +157,6 @@ plt.subplots(figsize=(40,40))
 sns.heatmap(diff, cmap=plt.cm.get_cmap('Spectral_r'), xticklabels=1000, yticklabels=2)
 plt.show()
 
-fig=plt.figure()
-plt.plot(times, similarity[0,:], color="black")
-plt.plot(times, similarity[1,:], color="red")
-plt.plot(times, similarity[2,:], color="yellow")
-plt.plot(times, similarity[3,:], color="green")
-plt.plot(times, similarity[4,:] ,color="blue")
-plt.show()
 
 # save model output
 
@@ -292,10 +241,12 @@ df2 = pd.DataFrame(t1)
 df2.columns = ["AirTemp_degC", "Longwave_Wm-2",
                   "Latent_Wm-2", "Sensible_Wm-2", "Shortwave_Wm-2",
                   "lightExtinct_m-1","ShearVelocity_mS-1", "ShearStress_Nm-2",
-                  "Area_m2"]
+                  "Area_m2", "CC", 'ea', 'Jlw', 'Uw', 'Pa', 'RH', 'PP', 'IceSnowAttCoeff',
+                  'iceFlag', 'iemovAvg', 'density_snow']
 df = pd.concat([df1, df2], axis = 1)
 df.to_csv('../output/py_meteorology_input.csv', index=None)
 
+    
 # ice-snow
 df1 = pd.DataFrame(times)
 df1.columns = ['time']
