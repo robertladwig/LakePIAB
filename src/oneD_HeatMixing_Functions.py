@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import os
-from math import pi, exp, sqrt, log, atan, sin, radians
+from math import pi, exp, sqrt, log, atan, sin, radians, nan
 from scipy.interpolate import interp1d
 from copy import deepcopy
 import datetime
@@ -19,6 +19,8 @@ from tqdm import tqdm
 import warnings
 warnings.filterwarnings("ignore")
 from numba import jit
+from scipy.linalg import solve_banded
+from scipy.stats.stats import pearsonr
 
 ## function to calculate density from temperature
 def calc_dens(wtemp):
@@ -28,7 +30,7 @@ def calc_dens(wtemp):
     return dens
 
 ## this is our attempt for turbulence closure, estimating eddy diffusivity
-def eddy_diffusivity(rho, depth, g, rho_0, ice, area, T):
+def eddy_diffusivity(rho, depth, g, rho_0, ice, area, T, diff):
     km = 1.4 * 10**(-7)
     
     buoy = np.ones(len(depth)) * 7e-5
@@ -45,14 +47,19 @@ def eddy_diffusivity(rho, depth, g, rho_0, ice, area, T):
     
     kz = ak * (buoy)**(-0.43)
     
-    if (np.mean(T) <= 5):
-        kz = kz * 1000
+        
+    if (np.mean(diff) == 0.0):
+        weight = 1
+    else:
+        weight = 0.5
+        
+    kz = weight * kz + (1 - weight) * diff
 
     
     return(kz + km)
 
 ## this is our attempt for turbulence closure, estimating eddy diffusivity
-def eddy_diffusivity_hendersonSellers(rho, depth, g, rho_0, ice, area, U10, latitude, T):
+def eddy_diffusivity_hendersonSellers(rho, depth, g, rho_0, ice, area, U10, latitude, T, diff):
     k = 0.4
     Pr = 1.0
     z0 = 0.0002
@@ -87,13 +94,20 @@ def eddy_diffusivity_hendersonSellers(rho, depth, g, rho_0, ice, area, U10, lati
       
     if (np.mean(T) <= 5):
         kz = kz * 1000
+    
+    if (np.mean(diff) == 0.0):
+        weight = 1
+    else:
+        weight = 0.5
+        
+    kz = weight * kz + (1 - weight) * diff
 
     
     # kz = ak * (buoy)**(-0.43)
     return(kz +  km)
 
 ## this is our attempt for turbulence closure, estimating eddy diffusivity
-def eddy_diffusivity_munkAnderson(rho, depth, g, rho_0, ice, area, U10, latitude, Cd, T):
+def eddy_diffusivity_munkAnderson(rho, depth, g, rho_0, ice, area, U10, latitude, Cd, T, diff):
     k = 0.4
     Pr = 1.0
     z0 = 0.0002
@@ -160,41 +174,41 @@ def eddy_diffusivity_munkAnderson(rho, depth, g, rho_0, ice, area, U10, latitude
     W_eff = e_w / (xi * sqrt(Cd))
     kz_ekman = 1/f * (rho_a / rho_0 * Cd / kullenberg)**2 * W_eff**2
     
-    #kz[depth < H_ekman/2] = kz_ekman * 100
+    #kz[depth < H_ekman] = kz_ekman 
+    
     if (np.mean(T) <= 5):
         kz = kz * 1000
-
+    
+    if (np.mean(diff) == 0.0):
+        weight = 1
+    else:
+        weight = 0.5
+        
+    kz = weight * kz + (1 - weight) * diff
 
     return(kz +  km)
 
-def crank_nicholson(T, dz, dt, kappa):
-    # number of grid points
-    
+def crank_nicholson(T, dz, dt, kappa, depth, area, volume):
     #breakpoint()
-    nz = T.shape[0]
-
-    # time step coefficient
-    alpha = kappa * dt / dz**2
-
-    # tridiagonal matrix for implicit Crank-Nicholson
-    A = np.zeros((nz, nz))
-    for i in range(1, nz-1):
-        A[i, i-1] = -alpha[i]/2
-        A[i, i] = 1 + alpha[i]
-        A[i, i+1] = -alpha[i]/2
+    N = len(T)
+    T_new = T
     
-    # Boundary conditions
-    A[0,0] = 1
-    A[0,1] = 0
-    A[-1,-1] = 1
-    A[-1,-2] = 0
+    r = kappa * dt /dz**2 
+    r = r[1:-1]
     
-
-    b = T + alpha/2 * np.concatenate(([0], T[1:-1], [0]))
-    T = np.linalg.solve(A, b)
-        
-    return T
-  
+    A = np.zeros((3, N -2))
+    
+    A[0, :] = -r
+    A[1,:] = 1 + 2*r
+    A[2, :] = -r
+    
+    B = np.zeros(N -2)
+    B = r*T[2:] + (1-2*r)*r*T[1:-1] + r*T[:-2]
+    B[0] = B[0] + r[0]*T[0]
+    B[-1] = B[-1] +r[-1]*T[-1]
+    
+    T_new[1:-1] = solve_banded((1,1), A, B)
+    
 def provide_meteorology(meteofile, secchifile, windfactor):
 
     meteo = pd.read_csv(meteofile)
@@ -272,7 +286,7 @@ def get_hypsography(hypsofile, dx, nx):
   area_fun = interp1d(hyps.Depth_meter.values, hyps.Area_meterSquared.values)
   area = area_fun(out_depths)
   area[-1] = area[-2] - 1 # TODO: confirm this is correct
-  depth = np.linspace(1, nx*dx, nx)
+  depth = np.linspace(0, nx*dx, nx)
   
   volume = 0.5 * (area[:-1] + area[1:]) * np.diff(depth)
   volume = np.append(volume, 1000)
@@ -678,7 +692,7 @@ def latent(Tair, Twater, Uw, p2, pa, ea, RH, A, Cd = 0.0013): # evaporation / la
   return latent* (-1)
 
 #@jit(nopython=True)
-def run_thermalmodel(
+def run_thermalmodel_v1(
   u, 
   startTime, 
   endTime,
@@ -739,7 +753,7 @@ def run_thermalmodel(
   ea_fillvals = tuple(daily_meteo.ea.values[[0,-1]])
   ea = interp1d(daily_meteo.dt.values, daily_meteo.ea.values, kind = "linear", fill_value=ea_fillvals, bounds_error=False)
   Uw_fillvals = tuple(daily_meteo.Ten_Meter_Elevation_Wind_Speed_meterPerSecond.values[[0, -1]])
-  Uw = interp1d(wind_factor * daily_meteo.dt.values, daily_meteo.Ten_Meter_Elevation_Wind_Speed_meterPerSecond.values, kind = "linear", fill_value=Uw_fillvals, bounds_error=False)
+  Uw = interp1d(daily_meteo.dt.values, wind_factor * daily_meteo.Ten_Meter_Elevation_Wind_Speed_meterPerSecond.values, kind = "linear", fill_value=Uw_fillvals, bounds_error=False)
   CC_fillvals = tuple(daily_meteo.Cloud_Cover.values[[0,-1]])
   CC = interp1d(daily_meteo.dt.values, daily_meteo.Cloud_Cover.values, kind = "linear", fill_value=CC_fillvals, bounds_error=False)
   Pa_fillvals = tuple(daily_meteo.Surface_Level_Barometric_Pressure_pascal.values[[0,-1]])
@@ -798,8 +812,13 @@ def run_thermalmodel(
       n2 = 9.81/np.mean(dens_u_n2) * (dens_u_n2[1:] - dens_u_n2[:-1])/dx
       n2_pgdl[:,idn] = np.concatenate([n2, np.array([np.nan])])
       um_initial[:, idn] = u
-      
-    kz = eddy_diffusivity(dens_u_n2, depth, 9.81, np.mean(dens_u_n2) , ice, area, u) / 86400
+     
+    if 'kzn' in locals():
+        1+1
+    else: 
+        kzn = u * 0.0
+    
+    kz = eddy_diffusivity(dens_u_n2, depth, 9.81, np.mean(dens_u_n2) , ice, area, u, diff = kzn) / 86400
     
 
     if ice and Tair(n) <= 0:
@@ -957,7 +976,7 @@ def run_thermalmodel(
         maxdep = dep - 1
         break
       elif dep > 0 and PE < KE:
-        u[(dep - 1):(dep+1)] = np.sum(u[(dep-1):(dep+1)] * volume[(dep-1):(dep+1)])/np.sum(volume[(dep-1):(dep+1)])
+          u[(dep - 1):(dep+1)] = np.sum(u[(dep-1):(dep+1)] * volume[(dep-1):(dep+1)])/np.sum(volume[(dep-1):(dep+1)])
       
       maxdep = dep
       
@@ -1220,7 +1239,7 @@ def run_thermalmodel(
   
   return(dat)
 
-def run_thermalmodel_hendersonSellers(
+def run_thermalmodel_v2(
   u, 
   startTime, 
   endTime,
@@ -1239,6 +1258,7 @@ def run_thermalmodel_hendersonSellers(
   supercooled=0,
   diffusion_method = 'hendersonSellers',
   scheme='implicit',
+  mixing = 0,
   kd_light=None,
   denThresh=1e-3,
   albedo=0.1,
@@ -1313,6 +1333,7 @@ def run_thermalmodel_hendersonSellers(
   Hsm= np.full([1,nCol], np.nan)
   Hsim= np.full([1,nCol], np.nan)
   Ticem= np.full([1,nCol], np.nan)
+  Similarity = np.full([5,nCol], np.nan)
   
   if pgdl_mode == 'on':
     um_initial = np.full([nx, nCol], np.nan)
@@ -1334,6 +1355,7 @@ def run_thermalmodel_hendersonSellers(
   for idn, n in enumerate(times):
     
     un = deepcopy(u)
+    un_initial = un
     dens_u_n2 = calc_dens(u)
     time_ind = np.where(times == n)
     
@@ -1342,7 +1364,25 @@ def run_thermalmodel_hendersonSellers(
       n2_pgdl[:,idn] = np.concatenate([n2, np.array([np.nan])])
       um_initial[:, idn] = u
       
-
+      
+    wind_mixing = Uw(n)
+    
+    if 'kzn' in locals():
+        1+1
+    else: 
+        kzn = u * 0.0
+    
+    
+    ## (2) DIFFUSION
+    if diffusion_method == 'hendersonSellers':
+        kz = eddy_diffusivity_hendersonSellers(dens_u_n2, depth, 9.81, np.mean(dens_u_n2) , ice, area, wind_mixing,  43.100948, u, kzn) / 1
+    elif diffusion_method == 'munkAnderson':
+        kz = eddy_diffusivity_munkAnderson(dens_u_n2, depth, 9.81, np.mean(dens_u_n2) , ice, area, wind_mixing,  43.100948, Cd, u, kzn) / 1
+    elif diffusion_method == 'hondzoStefan':
+        kz = eddy_diffusivity(dens_u_n2, depth, 9.81, np.mean(dens_u_n2) , ice, area, u, kzn) / 86400
+        
+    
+    
 
     if ice and Tair(n) <= 0:
       albedo = 0.3
@@ -1388,23 +1428,11 @@ def run_thermalmodel_hendersonSellers(
       Hm[:, idn] = H
       Qm[0, idn] = Q
     
+    un = u
+    Similarity[0, idn] = pearsonr(un_initial, u)[0]
+    
     end_time = datetime.datetime.now()
     print("heating: " + str(end_time - start_time))
-
-    if ice:
-        wind_mixing = Uw(n)
-    else:
-        wind_mixing = Uw(n)
-        
-    ## (2) DIFFUSION
-    if diffusion_method == 'hendersonSellers':
-        kz = eddy_diffusivity_hendersonSellers(dens_u_n2, depth, 9.81, np.mean(dens_u_n2) , ice, area, wind_mixing,  43.100948, u) / 1
-    elif diffusion_method == 'munkAnderson':
-        kz = eddy_diffusivity_munkAnderson(dens_u_n2, depth, 9.81, np.mean(dens_u_n2) , ice, area, wind_mixing,  43.100948, Cd, u) / 1
-    
-    
-
-    #kz = eddy_diffusivity(dens_u_n2, depth, 9.81, np.mean(dens_u_n2) , ice, area) / 86400
     
 
     
@@ -1416,14 +1444,18 @@ def run_thermalmodel_hendersonSellers(
 
       
         # IMPLEMENTATION OF CRANK-NICHOLSON SCHEME
-        
+
         j = len(un)
         y = np.zeros((len(un), len(un)))
         
-        alpha = (dt/dx**2) * kzn
+        # alpha = (dt/dx**2) * kzn 
+        # alpha = (dt/dx) * kzn 
+        alpha = (area * kzn * dt) / (2 * dx**2)
+        beta = (2 * dx**2) / (kzn * dt)
         
         az = - alpha # subdiagonal
-        bz = 2 * (1 + alpha) # diagonal
+        # bz = 2 * (1 + alpha) # diagonal
+        bz = (area + 2 * alpha) # diagonal
         cz = - alpha # superdiagonal
         
         bz[0] = 1
@@ -1444,7 +1476,7 @@ def run_thermalmodel_hendersonSellers(
         # y[j-1, j-1] = 1
         y[j-1, j-2] = 0
         y[j-1, j-1] = 1
-        
+
         # print(y[0:4])
         
         mn = un * 0.0    
@@ -1452,31 +1484,42 @@ def run_thermalmodel_hendersonSellers(
         mn[len(mn)-1] = u[len(u)-1]
         
         for k in range(1,j-1):
-            mn[k] = alpha[k] * u[k-1] + 2 * (1 - alpha[k]) * u[k] + alpha[k] * u[k+1]
+            # mn[k] = alpha[k] * u[k-1] + 2 * (1 - alpha[k]) * u[k] + alpha[k] * u[k+1]
+            mn[k] = alpha[k] * u[k-1] + (area[k] - 2 * alpha[k]) * u[k] + alpha[k] * u[k+1]
 
     # DERIVED TEMPERATURE OUTPUT FOR NEXT MODULE
     
         #breakpoint()
 
-        #breakpoint()
+#        breakpoint()
+        un = u
         u = np.linalg.solve(y, mn)
         
-        #u = crank_nicholson(T = un, dz = dx, dt = dt, kappa = kzn)
+        Similarity[1, idn] = pearsonr(un_initial, u)[0]
+        
+        #u = crank_nicholson(T = un, dz = dx, dt = dt, kappa = kzn, depth  = depth, area = area, volume = volume)
 
         
     # TODO: implement / figure out this
     if scheme == 'explicit':
-      u[0] = (un[0] + 
-        (Q * area[0]/(dx)*1/(4184 * calc_dens(un[0]) ) + abs(H[0+1]-H[0]) * area[0]/(dx) * 1/(4184 * calc_dens(un[0]) ) + 
-        Hg[0]) * dt/area[0])
-      # all layers in between
+     
+      u[0]= un[0]
+      u[-1] = un[-1]
       for i in range(1,(nx-1)):
-        u[i] = (un[i] + (area[i] * kzn[i] * 1 / dx**2 * (un[i+1] - 2 * un[i] + un[i-1]) +
-          abs(H[i+1]-H[i]) * area[i]/(dx) * 1/(4184 * calc_dens(un[i]) ) + Hg[i])* dt/area[i])
+        u[i] = (un[i] + (kzn[i] * dt / dx**2 * (un[i+1] - 2 * un[i] + un[i-1])))
+      
+        # u[0] = (un[0] + 
+      #   (Q * area[0]/(dx)*1/(4184 * calc_dens(un[0]) ) + abs(H[0+1]-H[0]) * area[0]/(dx) * 1/(4184 * calc_dens(un[0]) ) + 
+      #   Hg[0]) * dt/area[0])
+      # all layers in between
+      # for i in range(1,(nx-1)):
+      #   u[i] = (un[i] + (area[i] * kzn[i] * 1 / dx**2 * (un[i+1] - 2 * un[i] + un[i-1]) +
+      #     abs(H[i+1]-H[i]) * area[i]/(dx) * 1/(4184 * calc_dens(un[i]) ) + Hg[i])* dt/area[i])
       # bottom layer
-      u[(nx-1)] = (un[(nx-1)] +
-      (abs(H[(nx-1)]-H[(nx-1)-1]) * area[(nx-1)]/(area[(nx-1)]*dx) * 1/(4181 * calc_dens(un[(nx-1)])) +
-      Hg[(nx-1)]/area[(nx-1)]) * dt)
+      # u[(nx-1)] = (un[(nx-1)] +
+      # (abs(H[(nx-1)]-H[(nx-1)-1]) * area[(nx-1)]/(area[(nx-1)]*dx) * 1/(4181 * calc_dens(un[(nx-1)])) +
+      # Hg[(nx-1)]/area[(nx-1)]) * dt)
+      
                                                            
     if pgdl_mode == 'on':
       um_diff[:, idn] = u
@@ -1495,7 +1538,8 @@ def run_thermalmodel_hendersonSellers(
       c10 = 0.0005 * sqrt(Uw(n))
     else:
       c10 = 0.0026
-      
+    
+    un = u
     shear = sqrt((c10 * calc_dens(un[0]))/1.225) *  Uw(n) # shear velocity
     # coefficient times wind velocity squared
     KE = shear *  tau * dt # kinetic energy as function of wind
@@ -1518,8 +1562,9 @@ def run_thermalmodel_hendersonSellers(
       if PE > KE:
         maxdep = dep - 1
         break
-#      elif dep > 0 and PE < KE:
-#        u[(dep - 1):(dep+1)] = np.sum(u[(dep-1):(dep+1)] * volume[(dep-1):(dep+1)])/np.sum(volume[(dep-1):(dep+1)])
+      elif dep > 0 and PE < KE:
+          if mixing == 1:
+              u[(dep - 1):(dep+1)] = np.sum(u[(dep-1):(dep+1)] * volume[(dep-1):(dep+1)])/np.sum(volume[(dep-1):(dep+1)])
       
       maxdep = dep
       
@@ -1529,6 +1574,7 @@ def run_thermalmodel_hendersonSellers(
     if pgdl_mode == 'on':
       um_mix[:, idn] = u
 
+    Similarity[2, idn] = pearsonr(un_initial, u)[0]
     end_time = datetime.datetime.now()
     print("mixing: " + str(end_time - start_time))
 
@@ -1543,6 +1589,7 @@ def run_thermalmodel_hendersonSellers(
     dens_u = calc_dens(u) 
     diff_dens_u = np.diff(dens_u) 
     diff_dens_u[abs(diff_dens_u) <= denThresh] = 0
+    un = u 
     while np.any(diff_dens_u < 0):
       dens_u = calc_dens(u)
       for dep in range(0, nx-1):
@@ -1563,7 +1610,7 @@ def run_thermalmodel_hendersonSellers(
     mix_z[0, idn] = max_n2
     if pgdl_mode == 'on':
       um_conv[:, idn] = u
-      
+    Similarity[3, idn] = pearsonr(un_initial, u)[0]
     
     end_time = datetime.datetime.now()
     print("convection: " + str(end_time - start_time))
@@ -1574,6 +1621,7 @@ def run_thermalmodel_hendersonSellers(
     icep  = max(dt_iceon_avg,  (dt/86400))
     x = (dt/86400) / icep
     iceT = iceT * (1 - x) + u[0] * x
+    un = u
     
     K_snow = 2.22362 * (rho_snow/1000)**1.885
     Tice = 0
@@ -1678,6 +1726,7 @@ def run_thermalmodel_hendersonSellers(
         Hsi = 0
     
     
+    Similarity[4, idn] = pearsonr(un_initial, u)[0]
     Him[0,idn] = Hi
     Hsm[0,idn] = Hs
     Hsim[0,idn] = Hsi
@@ -1691,6 +1740,13 @@ def run_thermalmodel_hendersonSellers(
     
     n2m[:,idn] = n2
     um[:,idn] = u
+    
+    # print( um_heat[:, idn] )
+    # print( um_diff[:, idn] )
+    # print( um_mix[:, idn] )
+    # print( um_conv[:, idn] )
+    # print( um[:, idn] )
+    # breakpoint()
     
     if pgdl_mode == 'on':
       um_ice[:, idn] = u
@@ -1749,7 +1805,8 @@ def run_thermalmodel_hendersonSellers(
           'last_ice' : last_ice,
           'last_snow' : last_snow,
           'last_snowice' : last_snowice,
-          'density_snow' : rho_snow}
+          'density_snow' : rho_snow,
+          'similarity' : Similarity}
   if pgdl_mode == 'on':
     dat = {'temp' : um,
                'diff' : kzm,
@@ -1778,7 +1835,8 @@ def run_thermalmodel_hendersonSellers(
                'last_ice' : last_ice,
                'last_snow' : last_snow,
                'last_snowice' : last_snowice,
-               'density_snow' : rho_snow}
+               'density_snow' : rho_snow,
+               'similarity' : Similarity}
   
   return(dat)
 
@@ -2585,6 +2643,7 @@ def run_hybridmodel_mixing(
         return len(self.X)
   
   m0_PATH =  f"./../MCL/03_finetuning/saved_models/mixing_model_finetuned.pth"
+  m0_PATH =  f"./../MCL/02_training/saved_models/mixing_model_time.pth"
   #m0_PATH =  f"./../MCL/02_training/saved_models/heating_model_time.pth"
   
   m0_layers = [9, 32, 32, 1]

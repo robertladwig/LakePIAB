@@ -10,7 +10,7 @@ import seaborn as sns
 
 
 os.chdir("/home/robert/Projects/LakePIAB/src")
-from oneD_HeatMixing_Functions import get_hypsography, provide_meteorology, initial_profile, run_thermalmodel, run_hybridmodel_heating, run_hybridmodel_mixing, run_thermalmodel_hendersonSellers
+from oneD_HeatMixing_Functions import get_hypsography, provide_meteorology, initial_profile, run_thermalmodel, run_hybridmodel_heating, run_hybridmodel_mixing, run_thermalmodel_v1
 
 ## lake configurations
 zmax = 25 # maximum lake depth
@@ -89,7 +89,7 @@ Start = datetime.datetime.now()
 #     rho_snow = 250)
 
 
-res = run_thermalmodel_hendersonSellers( # _hendersonSellers
+res = run_thermalmodel( #run_thermalmodel_hendersonSellers 
     u = deepcopy(u_ini),
     startTime = startTime, 
     endTime = ( startTime + total_runtime * hydrodynamic_timestep) - 1,
@@ -108,8 +108,9 @@ res = run_thermalmodel_hendersonSellers( # _hendersonSellers
     Hsi = 0,
     iceT = 6,
     supercooled = 0,
-    diffusion_method = 'munkAnderson',# 'hendersonSellers',
+    diffusion_method = 'hondzoStefan',# 'hendersonSellers', 'munkAnderson' 'hondzoStefan'
     scheme='implicit',
+    mixing = 1,
     kd_light = 0.4, # 0.4,
     denThresh=1e-3,
     albedo = 0.1,
@@ -147,7 +148,7 @@ heatflux_sw= res['heatflux_sw']
 icethickness= res['icethickness']
 snowthickness= res['snowthickness']
 snowicethickness= res['snowicethickness']
-
+similarity = res['similarity']
 
 # convert averages from array to data frame
 avgtemp_df = pd.DataFrame(avgtemp, columns=["time", "thermoclineDep", "epi", "hypo", "tot", "stratFlag"])
@@ -198,6 +199,14 @@ plt.show()
 # heatmap of diffusivities  
 plt.subplots(figsize=(40,40))
 sns.heatmap(diff, cmap=plt.cm.get_cmap('Spectral_r'), xticklabels=1000, yticklabels=2)
+plt.show()
+
+fig=plt.figure()
+plt.plot(times, similarity[0,:], color="black")
+plt.plot(times, similarity[1,:], color="red")
+plt.plot(times, similarity[2,:], color="yellow")
+plt.plot(times, similarity[3,:], color="green")
+plt.plot(times, similarity[4,:] ,color="blue")
 plt.show()
 
 # save model output
