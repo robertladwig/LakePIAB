@@ -242,7 +242,9 @@ df2.columns = ["AirTemp_degC", "Longwave_Wm-2",
                   "Latent_Wm-2", "Sensible_Wm-2", "Shortwave_Wm-2",
                   "lightExtinct_m-1","ShearVelocity_mS-1", "ShearStress_Nm-2",
                   "Area_m2", "CC", 'ea', 'Jlw', 'Uw', 'Pa', 'RH', 'PP', 'IceSnowAttCoeff',
-                  'iceFlag', 'iemovAvg', 'density_snow']
+                  'iceFlag', 'icemovAvg', 'density_snow', 'ice_prior', 'snow_prior', 
+                  'snowice_prior', 'rho_snow_prior', 'IceSnowAttCoeff_prior', 'iceFlag_prior',
+                  'dt_iceon_avg_prior', 'icemovAvg_prior']
 df = pd.concat([df1, df2], axis = 1)
 df.to_csv('../output/py_meteorology_input.csv', index=None)
 
@@ -438,6 +440,8 @@ dt = df_merged.sort_values('time')
 
 print(dt)
 
+dt_red =  dt[dt['time'] <= max(times)]
+
 # heatmap of temps  
 # Set the figure size
 plt.figure(figsize=(10, 8))
@@ -449,6 +453,6 @@ sns.heatmap(dt.set_index('time'), cmap='Reds')
 plt.show()
 
 
-dt.to_csv('../output/py_observed_temp.csv', index=None, na_rep='NULL')
-dt.to_csv('../output/py_observed_temp.csv', index=None)
-dt.to_csv('../output/py_observed_temp.csv', index=None, na_rep='-999')
+dt_red.to_csv('../output/py_observed_temp.csv', index=None, na_rep='NULL')
+dt_red.to_csv('../output/py_observed_temp.csv', index=None)
+dt_red.to_csv('../output/py_observed_temp.csv', index=None, na_rep='-999')
