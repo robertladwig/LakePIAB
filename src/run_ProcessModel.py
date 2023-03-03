@@ -15,7 +15,7 @@ from processBased_lakeModel_functions import get_hypsography, provide_meteorolog
 
 ## lake configurations
 zmax = 25 # maximum lake depth
-nx = 25 # number of layers we will have
+nx = 25 * 2# number of layers we will have
 dt = 3600 # 24 hours times 60 min/hour times 60 seconds/min
 dx = zmax/nx # spatial step
 
@@ -29,13 +29,13 @@ meteo_all = provide_meteorology(meteofile = '../input/Mendota_2002.csv',
                     windfactor = 1.0)
                      
 hydrodynamic_timestep = 24 * dt
-total_runtime =  365 *2 # 14 * 365
-startTime = 1#150 * 24 * 3600
+total_runtime =  365 *4 # 14 * 365
+startTime = 365*8#150 * 24 * 3600
 endTime =  (startTime + total_runtime * hydrodynamic_timestep) - 1
 
-startingDate = meteo_all[0]['date'][1]
-endingDate = meteo_all[0]['date'][(startTime + total_runtime) * hydrodynamic_timestep/dt]
-endingDate = meteo_all[0]['date'][(startTime + total_runtime * hydrodynamic_timestep/dt) - 1]
+startingDate = meteo_all[0]['date'][startTime* hydrodynamic_timestep/dt]
+endingDate = meteo_all[0]['date'][(startTime + total_runtime) * hydrodynamic_timestep/dt -1]
+# endingDate = meteo_all[0]['date'][(startTime + total_runtime * hydrodynamic_timestep/dt) - 1]
 
 #26280
 times = pd.date_range(startingDate, endingDate, freq='H')
@@ -54,9 +54,9 @@ res = run_thermalmodel(
     u = deepcopy(u_ini),
     startTime = startTime, 
     endTime = ( startTime + total_runtime * hydrodynamic_timestep) - 1,
-    area = hyps_all[0],
-    volume = hyps_all[2],
-    depth = hyps_all[1],
+    area = hyps_all[0][:-1],
+    volume = hyps_all[2][:-1],
+    depth = hyps_all[1][:-1],
     zmax = zmax,
     nx = nx,
     dt = dt,
@@ -69,7 +69,7 @@ res = run_thermalmodel(
     Hsi = 0,
     iceT = 6,
     supercooled = 0,
-    diffusion_method = 'hondzoStefan',# 'hendersonSellers', 'munkAnderson' 'hondzoStefan'
+    diffusion_method = 'hendersonSellers',# 'hendersonSellers', 'munkAnderson' 'hondzoStefan'
     scheme='implicit',
     kd_light = 0.4, # 0.4,
     denThresh=1e-3,
@@ -145,11 +145,6 @@ plt.show()
 # heatmap of temps  
 plt.subplots(figsize=(40,40))
 sns.heatmap(temp, cmap=plt.cm.get_cmap('Spectral_r'), xticklabels=1000, yticklabels=2)
-plt.show()
-
-# heatmap of temps  
-plt.subplots(figsize=(40,40))
-sns.heatmap(temp_diff, cmap=plt.cm.get_cmap('Spectral_r'), xticklabels=1000, yticklabels=2)
 plt.show()
 
 # heatmap of diffusivities  
@@ -268,191 +263,204 @@ df = pd.concat([df1, df2, df3, df4], axis = 1)
 df.to_csv('../output/py_icesnow.csv', index=None)
 
 # observed data
-             
-infile2  ="https://pasta.lternet.edu/package/data/eml/knb-lter-ntl/130/30/63d0587cf326e83f57b054bf2ad0f7fe".strip() 
-infile2  = infile2.replace("https://","http://")
-                 
-dt2 =pd.read_csv(infile2 
-          ,skiprows=1
-            ,sep=","  
-                ,quotechar='"' 
-            , names=[
-                    "sampledate",     
-                    "year4",     
-                    "month",     
-                    "daynum",     
-                    "hour",     
-                    "depth",     
-                    "wtemp",     
-                    "flag_wtemp"    ]
-# data type checking is commented out because it may cause data
-# loads to fail if the data contains inconsistent values. Uncomment 
-# the following lines to enable data type checking
-         
-#            ,dtype={ 
-#             'sampledate':'str' , 
-#             'year4':'float' , 
-#             'month':'float' , 
-#             'daynum':'float' , 
-#             'hour':'str' , 
-#             'depth':'float' , 
-#             'wtemp':'float' ,  
-#             'flag_wtemp':'str'  
-#        }
-          ,parse_dates=[
-                        'sampledate',
-                        'hour',
-                ] 
-    )
-# Coerce the data into the types specified in the metadata 
-# Since date conversions are tricky, the coerced dates will go into a new column with _datetime appended
-# This new column is added to the dataframe but does not show up in automated summaries below. 
-dt2=dt2.assign(sampledate_datetime=pd.to_datetime(dt2.sampledate,errors='coerce')) 
-dt2.year4=pd.to_numeric(dt2.year4,errors='coerce') 
-dt2.month=pd.to_numeric(dt2.month,errors='coerce') 
-dt2.daynum=pd.to_numeric(dt2.daynum,errors='coerce') 
-# Since date conversions are tricky, the coerced dates will go into a new column with _datetime appended
-# This new column is added to the dataframe but does not show up in automated summaries below. 
-dt2=dt2.assign(hour_datetime=pd.to_datetime(dt2.hour,errors='coerce')) 
-dt2.depth=pd.to_numeric(dt2.depth,errors='coerce') 
-dt2.wtemp=pd.to_numeric(dt2.wtemp,errors='coerce')  
-dt2.flag_wtemp=dt2.flag_wtemp.astype('category') 
-      
-print("Here is a description of the data frame dt2 and number of lines\n")
-print(dt2.info())
-print("--------------------\n\n")                
-print("Here is a summary of numerical variables in the data frame dt2\n")
-print(dt2.describe())
-print("--------------------\n\n")                
-                         
-print("The analyses below are basic descriptions of the variables. After testing, they should be replaced.\n")                 
-
-print(dt2.sampledate.describe())               
-print("--------------------\n\n")
-                    
-print(dt2.year4.describe())               
-print("--------------------\n\n")
-                    
-print(dt2.month.describe())               
-print("--------------------\n\n")
-                    
-print(dt2.daynum.describe())               
-print("--------------------\n\n")
-                    
-print(dt2.hour.describe())               
-print("--------------------\n\n")
-                    
-print(dt2.depth.describe())               
-print("--------------------\n\n")
-                    
-print(dt2.wtemp.describe())               
-print("--------------------\n\n")
-                    
-print(dt2.flag_wtemp.describe())               
-print("--------------------\n\n")
-                    
-dt2.columns   
-                 
-
-
-# Assume that your dataframe is called "df"
-# First, sort the dataframe by date and depth
-df = dt2.sort_values(['sampledate_datetime', 'hour', 'depth'])
-
-df['hour_numeric'] = pd.to_numeric(df['hour'], downcast='integer')
-
-df['new_hour'] = df.apply(lambda row: row['hour_numeric'] // 100 if row['hour_numeric'] // 100 >= 1 else row['hour_numeric'], axis=1)
-
-# Create a boolean index indicating the rows with an hour of 24
-index = df['new_hour'] == 24
-
-# Drop the rows with an hour of 24
-df.drop(df[df['new_hour'] == 24].index,inplace=True)
-
-df['new_hour'] = df['new_hour'].apply(lambda x: str(x).zfill(2))
-
-# Combine the 'date' and 'hour' columns into a single string in the format '%Y-%m-%d %H'
-df['datetime_str'] = df['sampledate_datetime'].astype(str) + ' ' + df['new_hour'].astype(str)
-
-# Convert the 'datetime_str' column to a datetime column
-df['datetime'] = pd.to_datetime(df['datetime_str'], format='%Y-%m-%d %H')
-
-print(df)
-
-# Next, create a list of the unique dates in the dataframe
-dates = df['datetime'].unique()
-
-# Create an empty list to store the interpolated data
-interpolated_data = []
-
-# Iterate over the unique dates
-for date in dates:
-  # Select the rows for the current date
-  df_date = df[df['datetime'] == date]
-
-  # Extract the depth and values for the current date
-  depth = df_date['depth'].values
-  values = df_date['wtemp'].values
-
-  # Use scipy's interp1d function to create a function for interpolating the values at different depths
-  f = interp1d(depth, values, bounds_error=False, fill_value=-999)
-
-  # Create a list of the desired depths for interpolation
-  new_depths = [i for i in range(25)]
-
-  # Use the interpolation function to get the interpolated values at the desired depths
-  interpolated_values = f(new_depths)
-
-  # Add the interpolated values and the current date to the interpolated_data list
-  interpolated_data.append({'time': date, 'values': interpolated_values})
-
-# Convert the interpolated_data list into a pandas dataframe
-interpolated_df = pd.DataFrame(interpolated_data)
-
-def create_columns(row):
-    # Create a dictionary with keys from 0 to 4 and values from the 'values' array
-    d = {i: row['values'][i] for i in range(25)}
-    # Return the dictionary as a Series
-    return pd.Series(d)
-
-# Create the new columns
-df_new = interpolated_df.apply(create_columns, axis=1)
-
-# Concatenate the original dataframe with the new columns
-df_result = pd.concat([interpolated_df, df_new], axis=1)
-
-# Drop the 'values' column
-df_result = df_result.drop(columns=['values'])
-
-# View the resulting dataframe
-print(df_result)
-
-# Create a new dataframe with the 'times' array as the 'time' column
-df_times = pd.DataFrame({'time': times})
-
-# Merge the df_result dataframe with the df_times dataframe using an outer join
-df_merged = pd.merge(df_result, df_times, on='time', how='outer')
-
-# View the merged dataframe
-print(df_merged)
-
-dt = df_merged.sort_values('time')
-
-print(dt)
-
-dt_red =  dt[dt['time'] <= max(times)]
-
-# heatmap of temps  
-# Set the figure size
-plt.figure(figsize=(10, 8))
-
-# Create a heat map plot
-sns.heatmap(dt.set_index('time'), cmap='Reds')
-
-# Show the plot
-plt.show()
-
-
-dt_red.to_csv('../output/py_observed_temp.csv', index=None, na_rep='NULL')
-dt_red.to_csv('../output/py_observed_temp.csv', index=None)
+dt = pd.read_csv('../input/observed_df_lter_hourly_wide.csv', index_col=0)
+dt=dt.rename(columns = {'DateTime':'time'})
+dt['time'] = pd.to_datetime(dt['time'], format='%Y-%m-%d %H')
+dt_red = dt[dt['time'] >= startingDate]
+dt_red = dt_red[dt_red['time'] <= endingDate]
 dt_red.to_csv('../output/py_observed_temp.csv', index=None, na_rep='-999')
+
+             
+# infile2  ="https://pasta.lternet.edu/package/data/eml/knb-lter-ntl/130/30/63d0587cf326e83f57b054bf2ad0f7fe".strip() 
+# infile2  = infile2.replace("https://","http://")
+                 
+# dt2 =pd.read_csv(infile2 
+#           ,skiprows=1
+#             ,sep=","  
+#                 ,quotechar='"' 
+#             , names=[
+#                     "sampledate",     
+#                     "year4",     
+#                     "month",     
+#                     "daynum",     
+#                     "hour",     
+#                     "depth",     
+#                     "wtemp",     
+#                     "flag_wtemp"    ]
+# # data type checking is commented out because it may cause data
+# # loads to fail if the data contains inconsistent values. Uncomment 
+# # the following lines to enable data type checking
+         
+# #            ,dtype={ 
+# #             'sampledate':'str' , 
+# #             'year4':'float' , 
+# #             'month':'float' , 
+# #             'daynum':'float' , 
+# #             'hour':'str' , 
+# #             'depth':'float' , 
+# #             'wtemp':'float' ,  
+# #             'flag_wtemp':'str'  
+# #        }
+#           ,parse_dates=[
+#                         'sampledate',
+#                         'hour',
+#                 ] 
+#     )
+# # Coerce the data into the types specified in the metadata 
+# # Since date conversions are tricky, the coerced dates will go into a new column with _datetime appended
+# # This new column is added to the dataframe but does not show up in automated summaries below. 
+# dt2=dt2.assign(sampledate_datetime=pd.to_datetime(dt2.sampledate,errors='coerce')) 
+# dt2.year4=pd.to_numeric(dt2.year4,errors='coerce') 
+# dt2.month=pd.to_numeric(dt2.month,errors='coerce') 
+# dt2.daynum=pd.to_numeric(dt2.daynum,errors='coerce') 
+# # Since date conversions are tricky, the coerced dates will go into a new column with _datetime appended
+# # This new column is added to the dataframe but does not show up in automated summaries below. 
+# dt2=dt2.assign(hour_datetime=pd.to_datetime(dt2.hour,errors='coerce')) 
+# dt2.depth=pd.to_numeric(dt2.depth,errors='coerce') 
+# dt2.wtemp=pd.to_numeric(dt2.wtemp,errors='coerce')  
+# dt2.flag_wtemp=dt2.flag_wtemp.astype('category') 
+      
+# print("Here is a description of the data frame dt2 and number of lines\n")
+# print(dt2.info())
+# print("--------------------\n\n")                
+# print("Here is a summary of numerical variables in the data frame dt2\n")
+# print(dt2.describe())
+# print("--------------------\n\n")                
+                         
+# print("The analyses below are basic descriptions of the variables. After testing, they should be replaced.\n")                 
+
+# print(dt2.sampledate.describe())               
+# print("--------------------\n\n")
+                    
+# print(dt2.year4.describe())               
+# print("--------------------\n\n")
+                    
+# print(dt2.month.describe())               
+# print("--------------------\n\n")
+                    
+# print(dt2.daynum.describe())               
+# print("--------------------\n\n")
+                    
+# print(dt2.hour.describe())               
+# print("--------------------\n\n")
+                    
+# print(dt2.depth.describe())               
+# print("--------------------\n\n")
+                    
+# print(dt2.wtemp.describe())               
+# print("--------------------\n\n")
+                    
+# print(dt2.flag_wtemp.describe())               
+# print("--------------------\n\n")
+                    
+# dt2.columns   
+                 
+
+
+# # Assume that your dataframe is called "df"
+# # First, sort the dataframe by date and depth
+# df = dt2.sort_values(['sampledate_datetime', 'hour', 'depth'])
+
+# df['hour_numeric'] = pd.to_numeric(df['hour'], downcast='integer')
+
+# df['new_hour'] = df.apply(lambda row: row['hour_numeric'] // 100 if row['hour_numeric'] // 100 >= 1 else row['hour_numeric'], axis=1)
+
+# # Create a boolean index indicating the rows with an hour of 24
+# index = df['new_hour'] == 24
+
+# # Drop the rows with an hour of 24
+# df.drop(df[df['new_hour'] == 24].index,inplace=True)
+
+# df['new_hour'] = df['new_hour'].apply(lambda x: str(x).zfill(2))
+
+# # Combine the 'date' and 'hour' columns into a single string in the format '%Y-%m-%d %H'
+# df['datetime_str'] = df['sampledate_datetime'].astype(str) + ' ' + df['new_hour'].astype(str)
+
+# # Convert the 'datetime_str' column to a datetime column
+# df['datetime'] = pd.to_datetime(df['datetime_str'], format='%Y-%m-%d %H')
+
+# print(df)
+
+# # Next, create a list of the unique dates in the dataframe
+# dates = df['datetime'].unique()
+
+# # Create an empty list to store the interpolated data
+# interpolated_data = []
+
+# # Iterate over the unique dates
+# for date in dates:
+#   # Select the rows for the current date
+#   df_date = df[df['datetime'] == date]
+
+#   # Extract the depth and values for the current date
+#   depth = df_date['depth'].values
+#   values = df_date['wtemp'].values
+
+#   # Use scipy's interp1d function to create a function for interpolating the values at different depths
+#   f = interp1d(depth, values, bounds_error=False, fill_value=-999)
+
+#   # Create a list of the desired depths for interpolation
+#   new_depths = [i for i in np.linspace(0,25,50)] # range(25)
+
+#   # Use the interpolation function to get the interpolated values at the desired depths
+#   interpolated_values = f(new_depths)
+
+#   # Add the interpolated values and the current date to the interpolated_data list
+#   interpolated_data.append({'time': date, 'values': interpolated_values})
+
+# # Convert the interpolated_data list into a pandas dataframe
+# interpolated_df = pd.DataFrame(interpolated_data)
+
+# def create_columns(row):
+#     # Create a dictionary with keys from 0 to 4 and values from the 'values' array
+#     d = {i: row['values'][i] for i in range(50)}
+#     # Return the dictionary as a Series
+#     return pd.Series(d)
+
+# # Create the new columns
+# df_new = interpolated_df.apply(create_columns, axis=1)
+
+# # Concatenate the original dataframe with the new columns
+# df_result = pd.concat([interpolated_df, df_new], axis=1)
+
+# # Drop the 'values' column
+# df_result = df_result.drop(columns=['values'])
+
+# # View the resulting dataframe
+# print(df_result)
+
+# # Create a new dataframe with the 'times' array as the 'time' column
+# df_times = pd.DataFrame({'time': times})
+
+# # Merge the df_result dataframe with the df_times dataframe using an outer join
+# df_merged = pd.merge(df_result, df_times, on='time', how='outer')
+
+# # View the merged dataframe
+# print(df_merged)
+
+# dt = df_merged.sort_values('time')
+
+# print(dt)
+
+# dt_red =  dt[dt['time'] <= max(times)]
+
+# # heatmap of temps  
+# # Set the figure size
+# plt.figure(figsize=(10, 8))
+
+# # Create a heat map plot
+# sns.heatmap(dt.set_index('time'), cmap='Reds')
+
+# # Show the plot
+# plt.show()
+
+
+# # plt.subplots(figsize=(40,40))
+# # sns.heatmap(dt.set_index('time'), cmap=plt.cm.get_cmap('Spectral_r'), xticklabels=1000, yticklabels=2)
+# # plt.show()
+# dt_red = dt_red[dt_red['time'] >= startingDate]
+# dt_red = dt_red[dt_red['time'] <= endingDate]
+
+# dt_red.to_csv('../output/py_observed_temp.csv', index=None, na_rep='NULL')
+# dt_red.to_csv('../output/py_observed_temp.csv', index=None)
+# dt_red.to_csv('../output/py_observed_temp.csv', index=None, na_rep='-999')

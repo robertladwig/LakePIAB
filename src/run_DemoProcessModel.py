@@ -10,9 +10,8 @@ import seaborn as sns
 from numba import jit
 
 os.chdir("/home/robert/Projects/LakePIAB/src")
-# from oneD_HeatMixing_Functions import get_hypsography, provide_meteorology, initial_profile, run_thermalmodel_v1, run_hybridmodel_heating, run_hybridmodel_mixing, run_thermalmodel_v2
-from processBased_lakeModel_functions import get_hypsography, provide_meteorology, initial_profile, run_thermalmodel, run_thermalmodel, heating_module, diffusion_module, mixing_module, convection_module, ice_module
-
+#from oneD_HeatMixing_Functions import get_hyp()sography, provide_meteorology, initial_profile, run_thermalmodel_v1, run_hybridmodel_heating, run_hybridmodel_mixing, run_thermalmodel_v2
+from processBased_lakeModel_functions import get_hypsography, provide_meteorology, initial_profile, run_thermalmodel, run_thermalmodel_specific #, heating_module, diffusion_module, mixing_module, convection_module, ice_module
 
 
 ## lake configurations
@@ -31,7 +30,7 @@ meteo_all = provide_meteorology(meteofile = '../input/Mendota_2002.csv',
                     windfactor = 1.0)
                      
 hydrodynamic_timestep = 24 * dt
-total_runtime =  365 * 6 # 14 * 365
+total_runtime =  365 * 2 # 14 * 365
 startTime = 1#150 * 24 * 3600
 endTime =  (startTime + total_runtime * hydrodynamic_timestep) - 1
 
@@ -71,7 +70,7 @@ res = run_thermalmodel(
     Hsi = 0,
     iceT = 6,
     supercooled = 0,
-    diffusion_method = 'hondzoStefan',# 'hendersonSellers', 'munkAnderson' 'hondzoStefan'
+    diffusion_method = 'hendersonSellers',# 'hendersonSellers', 'munkAnderson' 'hondzoStefan'
     scheme='implicit',
     kd_light = 0.4, # 0.4,
     denThresh=1e-3,
@@ -103,14 +102,11 @@ temp_mix =  res['temp_mix']
 temp_conv =  res['temp_conv']
 temp_ice=  res['temp_ice']
 meteo=  res['meteo_input']
-buoyancy = res['buoyancy_pgdl']
-td_depth= res['thermoclinedepth']
-heatflux_lwsl= res['heatflux_lwsl']
-heatflux_sw= res['heatflux_sw']
+buoyancy = res['buoyancy']
 icethickness= res['icethickness']
 snowthickness= res['snowthickness']
 snowicethickness= res['snowicethickness']
-similarity = res['similarity']
+
 
 
 # convert averages from array to data frame
@@ -165,6 +161,7 @@ fig=plt.figure()
 plt.plot(temp_initial[:,time_step], hyps_all[1], color="black")
 plt.plot(temp_heat[:,time_step], hyps_all[1],color="red")
 plt.plot(temp_diff[:,time_step], hyps_all[1],color="yellow")
+plt.plot(temp_mix[:,time_step], hyps_all[1],color="orange")
 plt.plot(temp_conv[:,time_step], hyps_all[1],color="green")
 plt.plot(temp_ice[:,time_step], hyps_all[1],color="blue")
 plt.gca().invert_yaxis()
@@ -175,13 +172,6 @@ plt.plot(diff[:,time_step], hyps_all[1], color="black")
 plt.gca().invert_yaxis()
 plt.show()
 
-fig=plt.figure()
-plt.plot(times, similarity[0,:], color="black")
-plt.plot(times, similarity[1,:], color="red")
-plt.plot(times, similarity[2,:], color="yellow")
-plt.plot(times, similarity[3,:], color="green")
-plt.plot(times, similarity[4,:] ,color="blue")
-plt.show()
 
 # compare to observed data
 
@@ -250,3 +240,4 @@ fig=plt.figure()
 ax = df_20m_observed.plot(x='datetime', y=['wtemp'], color="black", style = '.')
 df_20m_simulated.plot(x='datetime', y=['wtemp'], color="blue", ax = ax)
 plt.show()
+
