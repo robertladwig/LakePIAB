@@ -106,7 +106,7 @@ def eddy_diffusivity_hendersonSellers(rho, depth, g, rho_0, ice, area, U10, lati
     
     kz_old = kz
     
-    # kz[depth < H_ekman] = kz_ekman 
+    kz[depth < H_ekman] = kz_ekman / 100
     # kz[0:2] = kz_old[0:2]
     
     

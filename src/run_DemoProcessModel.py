@@ -9,7 +9,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from numba import jit
 
-os.chdir("/home/robert/Projects/LakePIAB/src")
+#os.chdir("/home/robert/Projects/LakePIAB/src")
+os.chdir("C:/Users/ladwi/Documents/Projects/R/LakePIAB/src")
 #from oneD_HeatMixing_Functions import get_hyp()sography, provide_meteorology, initial_profile, run_thermalmodel_v1, run_hybridmodel_heating, run_hybridmodel_mixing, run_thermalmodel_v2
 from processBased_lakeModel_functions import get_hypsography, provide_meteorology, initial_profile, run_thermalmodel, run_thermalmodel_specific #, heating_module, diffusion_module, mixing_module, convection_module, ice_module
 
@@ -55,9 +56,9 @@ res = run_thermalmodel(
     u = deepcopy(u_ini),
     startTime = startTime, 
     endTime = ( startTime + total_runtime * hydrodynamic_timestep) - 1,
-    area = hyps_all[0],
-    volume = hyps_all[2],
-    depth = hyps_all[1],
+    area = hyps_all[0][:-1],
+    volume = hyps_all[2][:-1],
+    depth = hyps_all[1][:-1],
     zmax = zmax,
     nx = nx,
     dt = dt,
@@ -157,18 +158,19 @@ sns.heatmap(diff, cmap=plt.cm.get_cmap('Spectral_r'), xticklabels=1000, yticklab
 plt.show()
 
 time_step = 210 * 24 
+depth_plot = hyps_all[1][:-1]
 fig=plt.figure()
-plt.plot(temp_initial[:,time_step], hyps_all[1], color="black")
-plt.plot(temp_heat[:,time_step], hyps_all[1],color="red")
-plt.plot(temp_diff[:,time_step], hyps_all[1],color="yellow")
-plt.plot(temp_mix[:,time_step], hyps_all[1],color="orange")
-plt.plot(temp_conv[:,time_step], hyps_all[1],color="green")
-plt.plot(temp_ice[:,time_step], hyps_all[1],color="blue")
+plt.plot(temp_initial[:,time_step], depth_plot, color="black")
+plt.plot(temp_heat[:,time_step], depth_plot,color="red")
+plt.plot(temp_diff[:,time_step], depth_plot,color="yellow")
+# plt.plot(temp_mix[:,time_step], hyps_all[1],color="orange")
+plt.plot(temp_conv[:,time_step], depth_plot,color="green")
+plt.plot(temp_ice[:,time_step], depth_plot,color="blue")
 plt.gca().invert_yaxis()
 plt.show()
 
 fig=plt.figure()
-plt.plot(diff[:,time_step], hyps_all[1], color="black")
+plt.plot(diff[:,time_step], depth_plot, color="black")
 plt.gca().invert_yaxis()
 plt.show()
 
