@@ -9,7 +9,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 
-os.chdir("/home/robert/Projects/LakePIAB/src")
+# os.chdir("/home/robert/Projects/LakePIAB/src")
+os.chdir("C:/Users/ladwi/Documents/Projects/R/LakePIAB/src")
 # from oneD_HeatMixing_Functions import get_hypsography, provide_meteorology, initial_profile, run_thermalmodel_v1, run_hybridmodel_heating, run_hybridmodel_mixing, run_thermalmodel_v2
 from processBased_lakeModel_functions import get_hypsography, provide_meteorology, initial_profile, run_thermalmodel, run_thermalmodel, heating_module, diffusion_module, mixing_module, convection_module, ice_module
 
@@ -71,6 +72,8 @@ res = run_thermalmodel(
     supercooled = 0,
     diffusion_method = 'hendersonSellers',# 'hendersonSellers', 'munkAnderson' 'hondzoStefan'
     scheme='implicit',
+    km = 4 * 10**(-6), 
+    weight_kz = 0.5,
     kd_light = 0.4, # 0.4,
     denThresh=1e-3,
     albedo = 0.1,

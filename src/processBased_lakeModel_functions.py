@@ -62,11 +62,11 @@ def eddy_diffusivity(rho, depth, g, rho_0, ice, area, T, diff):
     return(kz + km)
 
 ## this is our attempt for turbulence closure, estimating eddy diffusivity
-def eddy_diffusivity_hendersonSellers(rho, depth, g, rho_0, ice, area, U10, latitude, T, diff, Cd):
+def eddy_diffusivity_hendersonSellers(rho, depth, g, rho_0, ice, area, U10, latitude, T, diff, Cd, km, weight_kz):
     k = 0.4
     Pr = 1.0
     z0 = 0.0002
-    km = 1.4 * 10**(-7)
+    # 1.4 * 10**(-7)
     f = 1 * 10 **(-4)
     xi = 1/3
     kullenberg = 2 * 10**(-2)
@@ -89,9 +89,11 @@ def eddy_diffusivity_hendersonSellers(rho, depth, g, rho_0, ice, area, U10, lati
     low_values_flags = buoy < 7e-5  # Where values are low
     buoy[low_values_flags] = 7e-5
     
+    s_bg = 2 * 10**(-7)
+    s_seiche = 0.7 * buoy
     
     #breakpoint()
-    Ri = (-1 + (1 + 40 * np.array(buoy) * k**2 * np.array(depth)**2 / 
+    Ri = (-1 + (1 + 40 * (np.array(buoy) * k**2 * np.array(depth)**2) / 
                (w_star**2 * np.exp(-2 * k_star * np.array(depth))))**(1/2)) / 20
     
     kz = (k * w_star * np.array(depth)) / (Pr * (1 + 37 * np.array(Ri)**2)) * np.exp(-k_star * np.array(depth))
@@ -106,7 +108,7 @@ def eddy_diffusivity_hendersonSellers(rho, depth, g, rho_0, ice, area, U10, lati
     
     kz_old = kz
     
-    kz[depth < H_ekman] = kz_ekman / 100
+    # kz[depth < H_ekman] = kz_ekman / 100
     # kz[0:2] = kz_old[0:2]
     
     
@@ -116,7 +118,7 @@ def eddy_diffusivity_hendersonSellers(rho, depth, g, rho_0, ice, area, U10, lati
     if (np.mean(diff) == 0.0):
         weight = 1
     else:
-        weight = 0.5
+        weight = weight_kz
         
     kz[0] = kz[1]
         
@@ -169,7 +171,7 @@ def eddy_diffusivity_munkAnderson(rho, depth, g, rho_0, ice, area, U10, latitude
     s_seiche = 0.7 * buoy
     # (uf./(kappa*z_edge).*exp(-ks*z_edge)).^2; 
     s_wall = (w_star / (k * np.array(depth)) * np.exp(k_star * np.array(depth)))**2
-    s_wall =w_star/ (k * np.array(depth) *np.array(rho))
+    s_wall = w_star/ (k * np.array(depth) *np.array(rho))
     
     
     X_HS = np.array(buoy)/(s_wall**2 + s_bg + s_seiche)
@@ -1153,6 +1155,8 @@ def run_thermalmodel(
   supercooled=0,
   diffusion_method = 'hendersonSellers',
   scheme='implicit',
+  km = 1.4 * 10**(-7),
+  weight_kz = 0.5, 
   kd_light=None,
   denThresh=1e-3,
   albedo=0.1,
@@ -1249,7 +1253,7 @@ def run_thermalmodel(
         kz = u * 0.0
         
     if diffusion_method == 'hendersonSellers':
-        kz = eddy_diffusivity_hendersonSellers(dens_u_n2, depth, g, np.mean(dens_u_n2) , ice, area, Uw(n),  43.100948, u, kz, Cd) / 1
+        kz = eddy_diffusivity_hendersonSellers(dens_u_n2, depth, g, np.mean(dens_u_n2) , ice, area, Uw(n),  43.100948, u, kz, Cd, km, weight_kz) / 1
     elif diffusion_method == 'munkAnderson':
         kz = eddy_diffusivity_munkAnderson(dens_u_n2, depth, g, np.mean(dens_u_n2) , ice, area, Uw(n),  43.100948, Cd, u, kz) / 1
     elif diffusion_method == 'hondzoStefan':
@@ -1492,6 +1496,8 @@ def run_thermalmodel_specific(
   supercooled=0,
   diffusion_method = 'hendersonSellers',
   scheme='implicit',
+  km = 1.4 * 10**(-7),
+  weight_kz = 0.5,
   denThresh=1e-3,
   albedo=0.1,
   eps=0.97,
@@ -1562,7 +1568,7 @@ def run_thermalmodel_specific(
     kz = u * 0.0
     
   if diffusion_method == 'hendersonSellers':
-    kz = eddy_diffusivity_hendersonSellers(dens_u_n2, depth, g, np.mean(dens_u_n2) , ice, area, Uw,  43.100948, u, kz, Cd) / 1
+    kz = eddy_diffusivity_hendersonSellers(dens_u_n2, depth, g, np.mean(dens_u_n2) , ice, area, Uw,  43.100948, u, kz, Cd, km, weight_kz) / 1
   elif diffusion_method == 'munkAnderson':
     kz = eddy_diffusivity_munkAnderson(dens_u_n2, depth, g, np.mean(dens_u_n2) , ice, area, Uw,  43.100948, Cd, u, kz) / 1
   elif diffusion_method == 'hondzoStefan':
