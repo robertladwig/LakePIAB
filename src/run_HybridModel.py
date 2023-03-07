@@ -11,7 +11,7 @@ from sklearn.preprocessing import StandardScaler
 import torch
 
 os.chdir("/home/robert/Projects/LakePIAB/src")
-from oneD_HeatMixing_Functions import get_hypsography, provide_meteorology, initial_profile, run_thermalmodel, run_hybridmodel_heating, run_hybridmodel_mixing
+from processBased_lakeModel_functions import get_hypsography, provide_meteorology, initial_profile, run_thermalmodel, run_thermalmodel, heating_module, diffusion_module, mixing_module, convection_module, ice_module, run_thermalmodel_hybrid
 
 ## get normalization variables from deep learning
 device = torch.device('cpu')
@@ -24,14 +24,15 @@ data_df = data_df.drop(columns=['time'])
 #m0_input_columns = ['depth', 'AirTemp_degC', 'Longwave_Wm-2', 'Latent_Wm-2', 'Sensible_Wm-2', 'Shortwave_Wm-2',
  #               'lightExtinct_m-1','Area_m2', 
   #               'day_of_year', 'time_of_day', 'ice', 'snow', 'snowice', 'temp_initial00']
-m0_input_columns = ['depth', 'ShearVelocity_mS-1', 'ShearStress_Nm-2', 'day_of_year', 'time_of_day', 
-                'ice', 'snow', 'snowice', 'temp_diff02']
+m0_input_columns = ['depth', 'AirTemp_degC', 'Longwave_Wm-2', 'Latent_Wm-2', 'Sensible_Wm-2', 'Shortwave_Wm-2',
+                'lightExtinct_m-1', 'Area_m2', 'Uw',
+                 'buoyancy', 'day_of_year', 'time_of_day', 'diffusivity', 'temp_heat01']
 m0_input_column_ix = [data_df.columns.get_loc(column) for column in m0_input_columns]
 
 data_df_scaler = data_df[data_df.columns[m0_input_column_ix]]
 
 training_frac = 0.60
-depth_steps = 25
+depth_steps = 50
 number_days = len(data_df_scaler)//depth_steps
 n_obs = int(number_days*training_frac)*depth_steps
 
@@ -77,7 +78,7 @@ mean_scale = torch.tensor(train_mean[m0_output_column_ix[0]]).to(device).numpy()
                   
 ## lake configurations
 zmax = 25 # maximum lake depth
-nx = 25 # number of layers we will have
+nx = 25 * 2# number of layers we will have
 dt = 3600 # 24 hours times 60 min/hour times 60 seconds/min
 dx = zmax/nx # spatial step
 
@@ -91,13 +92,13 @@ meteo_all = provide_meteorology(meteofile = '../input/Mendota_2002.csv',
                     windfactor = 1.0)
                      
 hydrodynamic_timestep = 24 * dt
-total_runtime =  365 *3 # 14 * 365
-startTime = 1#150 * 24 * 3600
+total_runtime =  365 *4 # 14 * 365
+startTime = 365*8#150 * 24 * 3600
 endTime =  (startTime + total_runtime * hydrodynamic_timestep) - 1
 
-startingDate = meteo_all[0]['date'][1]
-endingDate = meteo_all[0]['date'][(startTime + total_runtime) * hydrodynamic_timestep/dt]
-endingDate = meteo_all[0]['date'][(startTime + total_runtime * hydrodynamic_timestep/dt) - 1]
+startingDate = meteo_all[0]['date'][startTime* hydrodynamic_timestep/dt]
+endingDate = meteo_all[0]['date'][(startTime + total_runtime) * hydrodynamic_timestep/dt -1]
+# endingDate = meteo_all[0]['date'][(startTime + total_runtime * hydrodynamic_timestep/dt) - 1]
 
 #26280
 times = pd.date_range(startingDate, endingDate, freq='H')
@@ -109,17 +110,15 @@ u_ini = initial_profile(initfile = '../input/observedTemp.txt', nx = nx, dx = dx
                      depth = hyps_all[1],
                      startDate = startingDate)
 
-# u_ini = u_ini * 0 + 0.5
-
 Start = datetime.datetime.now()
 
-res = run_hybridmodel_mixing(
+res = run_thermalmodel_hybrid(
     u = deepcopy(u_ini),
     startTime = startTime, 
     endTime =  (startTime + total_runtime * hydrodynamic_timestep) - 1,
-    area = hyps_all[0],
-    volume = hyps_all[2],
-    depth = hyps_all[1],
+    area = hyps_all[0][:-1],
+    volume = hyps_all[2][:-1],
+    depth = hyps_all[1][:-1],
     zmax = zmax,
     nx = nx,
     dt = dt,
@@ -127,7 +126,7 @@ res = run_hybridmodel_mixing(
     std_scale = std_scale,
     mean_scale = mean_scale,
     scaler = scaler_input,
-    test_input = data_df_scaler.head(n=25),
+    test_input = data_df_scaler.head(n=50),
     daily_meteo = meteo_all[0],
     secview = meteo_all[1],
     ice = False,
@@ -135,8 +134,11 @@ res = run_hybridmodel_mixing(
     Hs = 0,
     Hsi = 0,
     iceT = 6,
-    supercooled = 0,
+    supercooled = 0,#    
+    diffusion_method = 'hendersonSellers',# 'hendersonSellers', 'munkAnderson' 'hondzoStefan'
     scheme='implicit',
+    km = 4 * 10**(-6), 
+    weight_kz = 0.5,
     kd_light = 0.8,
     denThresh=1e-3,
     albedo = 0.1,
@@ -167,10 +169,7 @@ temp_mix =  res['temp_mix']
 temp_conv =  res['temp_conv']
 temp_ice=  res['temp_ice']
 meteo=  res['meteo_input']
-buoyancy = res['buoyancy_pgdl']
-td_depth= res['thermoclinedepth']
-heatflux_lwsl= res['heatflux_lwsl']
-heatflux_sw= res['heatflux_sw']
+buoyancy = res['buoyancy']
 icethickness= res['icethickness']
 snowthickness= res['snowthickness']
 snowicethickness= res['snowicethickness']
