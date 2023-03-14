@@ -12,7 +12,7 @@ import seaborn as sns
 # os.chdir("/home/robert/Projects/LakePIAB/src")
 os.chdir("C:/Users/ladwi/Documents/Projects/R/LakePIAB/src")
 # from oneD_HeatMixing_Functions import get_hypsography, provide_meteorology, initial_profile, run_thermalmodel_v1, run_hybridmodel_heating, run_hybridmodel_mixing, run_thermalmodel_v2
-from processBased_lakeModel_functions import get_hypsography, provide_meteorology, initial_profile, run_thermalmodel, run_thermalmodel, heating_module, diffusion_module, mixing_module, convection_module, ice_module
+from processBased_lakeModel_functions import get_hypsography, provide_meteorology, initial_profile, run_thermalmodel, run_thermalmodel, run_thermalmodel_test, heating_module, diffusion_module, mixing_module, convection_module, ice_module
 
 ## lake configurations
 zmax = 25 # maximum lake depth
@@ -31,7 +31,7 @@ meteo_all = provide_meteorology(meteofile = '../input/Mendota_2002.csv',
                      
 hydrodynamic_timestep = 24 * dt
 total_runtime =  365 *4 # 14 * 365
-startTime = 365*8#150 * 24 * 3600
+startTime = 365*10#150 * 24 * 3600
 endTime =  (startTime + total_runtime * hydrodynamic_timestep) - 1
 
 startingDate = meteo_all[0]['date'][startTime* hydrodynamic_timestep/dt]
@@ -51,7 +51,7 @@ u_ini = initial_profile(initfile = '../input/observedTemp.txt', nx = nx, dx = dx
 Start = datetime.datetime.now()
 
     
-res = run_thermalmodel(  
+res = run_thermalmodel_test(  
     u = deepcopy(u_ini),
     startTime = startTime, 
     endTime = ( startTime + total_runtime * hydrodynamic_timestep) - 1,
@@ -72,7 +72,7 @@ res = run_thermalmodel(
     supercooled = 0,
     diffusion_method = 'hendersonSellers',# 'hendersonSellers', 'munkAnderson' 'hondzoStefan'
     scheme='implicit',
-    km = 4 * 10**(-6), 
+    km = 1.4 * 10**(-7),#4 * 10**(-6), 
     weight_kz = 0.5,
     kd_light = 0.4, # 0.4,
     denThresh=1e-3,
@@ -274,6 +274,15 @@ dt_red = dt_red[dt_red['time'] <= endingDate]
 dt_red.to_csv('../output/py_observed_temp.csv', index=None, na_rep='-999')
 
              
+dt_notime = dt_red.drop(dt_red.columns[[0]], axis = 1)
+dt_notime = dt_notime.transpose()
+dt_obs = dt_notime.to_numpy()
+dt_obs.shape
+
+# heatmap of temps  
+plt.subplots(figsize=(40,40))
+sns.heatmap(dt_obs, cmap=plt.cm.get_cmap('Spectral_r'), xticklabels=1000, yticklabels=2)
+plt.show()
 # infile2  ="https://pasta.lternet.edu/package/data/eml/knb-lter-ntl/130/30/63d0587cf326e83f57b054bf2ad0f7fe".strip() 
 # infile2  = infile2.replace("https://","http://")
                  

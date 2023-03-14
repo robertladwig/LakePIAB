@@ -966,11 +966,17 @@ def convection_module(
     diff_dens_u[abs(diff_dens_u) <= denThresh] = 0
     un = u 
     while np.any(diff_dens_u < 0):
+      # dens_u = calc_dens(u)
+      # for dep in range(0, nx-1):
+      #   if dens_u[dep+1] < dens_u[dep] and abs(dens_u[dep+1] - dens_u[dep]) >= denThresh:
+      #     u[(dep):(dep+2)] = np.sum(u[(dep):(dep+2)] * volume[(dep):(dep+2)])/np.sum(volume[(dep):(dep+2)])
+          # break
       dens_u = calc_dens(u)
       for dep in range(0, nx-1):
         if dens_u[dep+1] < dens_u[dep] and abs(dens_u[dep+1] - dens_u[dep]) >= denThresh:
           u[(dep):(dep+2)] = np.sum(u[(dep):(dep+2)] * volume[(dep):(dep+2)])/np.sum(volume[(dep):(dep+2)])
-          break
+          dens_u = calc_dens(u)
+          
         
       dens_u = calc_dens(u)
       diff_dens_u = np.diff(dens_u)
@@ -1387,6 +1393,341 @@ def run_thermalmodel(
     rho_snow = ice_res['density_snow']
     
     um_ice[:, idn] = u
+    um[:, idn] = u
+    
+    Him[0,idn] = Hi
+    Hsm[0,idn] = Hs
+    Hsim[0,idn] = Hsi
+    
+    
+    meteo_pgdl[0, idn] = heating_res['air_temp']
+    meteo_pgdl[1, idn] = heating_res['longwave_flux']
+    meteo_pgdl[2, idn] = heating_res['latent_flux']
+    meteo_pgdl[3, idn] = heating_res['sensible_flux']
+    meteo_pgdl[4, idn] = heating_res['shortwave_flux']
+    meteo_pgdl[5, idn] = heating_res['light']
+    meteo_pgdl[6, idn] = -999 #mixing_res['shear']
+    meteo_pgdl[7, idn] = -999 #mixing_res['tau']
+    meteo_pgdl[8, idn] = np.nanmax(area)
+    meteo_pgdl[9, idn] = CC(n)
+    meteo_pgdl[10, idn] = ea(n)
+    meteo_pgdl[11, idn] = Jlw(n)
+    meteo_pgdl[12, idn] = Uw(n)
+    meteo_pgdl[13, idn] = Pa(n)
+    meteo_pgdl[14, idn] = RH(n)
+    meteo_pgdl[15, idn] = PP(n)
+    meteo_pgdl[16, idn] = IceSnowAttCoeff
+    meteo_pgdl[17, idn] = ice
+    meteo_pgdl[18, idn] = iceT
+    meteo_pgdl[19, idn] = rho_snow
+    meteo_pgdl[20, idn] = icethickness_prior 
+    meteo_pgdl[21, idn] = snowthickness_prior
+    meteo_pgdl[22, idn] = snowicethickness_prior 
+    meteo_pgdl[23, idn] = rho_snow_prior 
+    meteo_pgdl[24, idn] = IceSnowAttCoeff_prior
+    meteo_pgdl[25, idn] = ice_prior
+    meteo_pgdl[26, idn] = dt_iceon_avg_prior
+    meteo_pgdl[27, idn] = iceT_prior
+    
+    dens_u_n2 = calc_dens(u)
+    rho_0 = np.mean(dens_u_n2)
+    buoy = np.ones(len(depth)) * 7e-5
+    buoy[:-1] = np.abs(dens_u_n2[1:] - dens_u_n2[:-1]) / (depth[1:] - depth[:-1]) * g / rho_0
+    buoy[-1] = buoy[-2]
+    # n2 = 9.81/np.mean(dens_u_n2) * (dens_u_n2[1:] - dens_u_n2[:-1])/dx
+    n2m[:,idn] = buoy # np.concatenate([n2, np.array([np.nan])])
+
+  bf_sim = np.apply_along_axis(center_buoyancy, axis=1, arr = um.T, depths=depth)
+  
+
+  df_z_df_sim = pd.DataFrame({'time': times, 'thermoclineDep': bf_sim})
+
+  df_z_df_sim['epi'] = np.nan
+  df_z_df_sim['hypo'] = np.nan
+  df_z_df_sim['tot'] = np.nan
+  df_z_df_sim['stratFlag'] = np.nan
+  for j in range(df_z_df_sim.shape[0]):
+    if np.isnan(df_z_df_sim.loc[j, 'thermoclineDep']):
+      cur_z = 1
+      cur_ind = 0
+    else:
+      cur_z = df_z_df_sim.loc[j, 'thermoclineDep']
+      cur_ind = np.max(np.where(depth < cur_z))
+      
+    df_z_df_sim.loc[j, 'epi'] = np.sum(um[0:(cur_ind + 1), j] * area[0:(cur_ind+1)]) / np.sum(area[0:(cur_ind+1)])
+    df_z_df_sim.loc[j, 'hypo'] = np.sum(um[ cur_ind:, j] * area[cur_ind:]) / np.sum(area[cur_ind:])
+    df_z_df_sim.loc[j, 'tot'] = np.sum(um[:,j] * area) / np.sum(area)
+    if calc_dens(um[-1,j]) - calc_dens(um[0,j]) >= 0.1 and np.mean(um[:,j]) >= 4:
+      df_z_df_sim.loc[j, 'stratFlag'] = 1
+    else:
+      df_z_df_sim.loc[j, 'stratFlag'] = 0
+      
+  dat = {'temp' : um,
+               'diff' : kzm,
+               'icethickness' : Him,
+               'snowthickness' : Hsm,
+               'snowicethickness' : Hsim,
+               'iceflag' : ice,
+               'icemovAvg' : iceT,
+               'supercooled' : supercooled,
+               'endtime' : endTime, 
+               'average' : df_z_df_sim,
+               'temp_initial' : um_initial,
+               'temp_heat' : um_heat,
+               'temp_diff' : um_diff,
+               'temp_mix' : um_mix,
+               'temp_conv' : um_conv,
+               'temp_ice' : um_ice,
+               'meteo_input' : meteo_pgdl,
+               'buoyancy' : n2m,
+               'density_snow' : rho_snow}
+  
+  return(dat)
+
+def run_thermalmodel_test(
+  u, 
+  startTime, 
+  endTime,
+  area,
+  volume,
+  depth,
+  zmax,
+  nx,
+  dt,
+  dx,
+  daily_meteo,
+  secview,
+  ice=False,
+  Hi=0,
+  iceT=6,
+  supercooled=0,
+  diffusion_method = 'hendersonSellers',
+  scheme='implicit',
+  km = 1.4 * 10**(-7),
+  weight_kz = 0.5, 
+  kd_light=None,
+  denThresh=1e-3,
+  albedo=0.1,
+  eps=0.97,
+  emissivity=0.97,
+  sigma=5.67e-8,
+  sw_factor = 1.0,
+  wind_factor = 1.0,
+  p2=1,
+  B=0.61,
+  g=9.81,
+  Cd=0.0013, # momentum coeff (wind)
+  meltP=1,
+  dt_iceon_avg=0.8,
+  Hgeo=0.1, # geothermal heat
+  KEice=1/1000,
+  Ice_min=0.1,
+  pgdl_mode='on',
+  Hs = 0,
+  rho_snow = 250,
+  Hsi = 0,
+  rho_ice = 910,
+  rho_fw = 1000,
+  rho_new_snow = 250,
+  rho_max_snow = 450,
+  K_ice = 2.1,
+  Cw = 4.18E6,
+  L_ice = 333500,
+  kd_snow = 0.9,
+  kd_ice = 0.7):
+    
+  ## linearization of driver data, so model can have dynamic step
+  Jsw_fillvals = tuple(daily_meteo.Shortwave_Radiation_Downwelling_wattPerMeterSquared.values[[0, -1]])
+  Jsw = interp1d(daily_meteo.dt.values, daily_meteo.Shortwave_Radiation_Downwelling_wattPerMeterSquared.values, kind = "linear", fill_value=Jsw_fillvals, bounds_error=False)
+  Jlw_fillvals = tuple(daily_meteo.Longwave_Radiation_Downwelling_wattPerMeterSquared.values[[0,-1]])
+  Jlw = interp1d(daily_meteo.dt.values, daily_meteo.Longwave_Radiation_Downwelling_wattPerMeterSquared.values, kind = "linear", fill_value=Jlw_fillvals, bounds_error=False)
+  Tair_fillvals = tuple(daily_meteo.Air_Temperature_celsius.values[[0,-1]])
+  Tair = interp1d(daily_meteo.dt.values, daily_meteo.Air_Temperature_celsius.values, kind = "linear", fill_value=Tair_fillvals, bounds_error=False)
+  ea_fillvals = tuple(daily_meteo.ea.values[[0,-1]])
+  ea = interp1d(daily_meteo.dt.values, daily_meteo.ea.values, kind = "linear", fill_value=ea_fillvals, bounds_error=False)
+  Uw_fillvals = tuple(daily_meteo.Ten_Meter_Elevation_Wind_Speed_meterPerSecond.values[[0, -1]])
+  Uw = interp1d(daily_meteo.dt.values, wind_factor * daily_meteo.Ten_Meter_Elevation_Wind_Speed_meterPerSecond.values, kind = "linear", fill_value=Uw_fillvals, bounds_error=False)
+  CC_fillvals = tuple(daily_meteo.Cloud_Cover.values[[0,-1]])
+  CC = interp1d(daily_meteo.dt.values, daily_meteo.Cloud_Cover.values, kind = "linear", fill_value=CC_fillvals, bounds_error=False)
+  Pa_fillvals = tuple(daily_meteo.Surface_Level_Barometric_Pressure_pascal.values[[0,-1]])
+  Pa = interp1d(daily_meteo.dt.values, daily_meteo.Surface_Level_Barometric_Pressure_pascal.values, kind = "linear", fill_value=Pa_fillvals, bounds_error=False)
+  if kd_light is None:
+      kd_fillvals = tuple(secview.kd.values[[0,-1]])
+      kd = interp1d(secview.dt.values, secview.kd.values, kind = "linear", fill_value=kd_fillvals, bounds_error=False)
+  RH_fillvals = tuple(daily_meteo.Relative_Humidity_percent.values[[0,-1]])
+  RH = interp1d(daily_meteo.dt.values, daily_meteo.Relative_Humidity_percent.values, kind = "linear", fill_value=RH_fillvals, bounds_error=False)
+  PP_fillvals = tuple(daily_meteo.Precipitation_millimeterPerDay.values[[0,-1]])
+  PP = interp1d(daily_meteo.dt.values, daily_meteo.Precipitation_millimeterPerDay.values, kind = "linear", fill_value=PP_fillvals, bounds_error=False)
+
+  
+  step_times = np.arange(startTime, endTime, dt)
+  nCol = len(step_times)
+  um = np.full([nx, nCol], np.nan)
+  kzm = np.full([nx, nCol], np.nan)
+  mix_z = np.full([1,nCol], np.nan)
+  Him= np.full([1,nCol], np.nan)
+  Hsm= np.full([1,nCol], np.nan)
+  Hsim= np.full([1,nCol], np.nan)
+  
+
+  um_initial = np.full([nx, nCol], np.nan)
+  um_heat = np.full([nx, nCol], np.nan)
+  um_diff = np.full([nx, nCol], np.nan)
+  um_mix = np.full([nx, nCol], np.nan)
+  um_conv = np.full([nx, nCol], np.nan)
+  um_ice = np.full([nx, nCol], np.nan)
+  n2m = np.full([nx, nCol], np.nan)
+  meteo_pgdl = np.full([28, nCol], np.nan)
+  
+  if not kd_light is None:
+    def kd(n): # using this shortcut for now / testing if it works
+      return kd_light
+
+  
+
+  times = np.arange(startTime, endTime, dt)
+  for idn, n in enumerate(times):
+    
+    un = deepcopy(u)
+    un_initial = un
+    dens_u_n2 = calc_dens(u)
+    time_ind = np.where(times == n)
+
+    um_initial[:, idn] = u
+    
+    if 'kz' in locals():
+        1+1
+    else: 
+        kz = u * 0.0
+        
+    if diffusion_method == 'hendersonSellers':
+        kz = eddy_diffusivity_hendersonSellers(dens_u_n2, depth, g, np.mean(dens_u_n2) , ice, area, Uw(n),  43.100948, u, kz, Cd, km, weight_kz) / 1
+    elif diffusion_method == 'munkAnderson':
+        kz = eddy_diffusivity_munkAnderson(dens_u_n2, depth, g, np.mean(dens_u_n2) , ice, area, Uw(n),  43.100948, Cd, u, kz) / 1
+    elif diffusion_method == 'hondzoStefan':
+        kz = eddy_diffusivity(dens_u_n2, depth, g, np.mean(dens_u_n2) , ice, area, u, kz) / 86400
+    
+    ## (1) HEATING
+    heating_res = heating_module(
+        un = u,
+        area = area,
+        volume = volume,
+        depth = depth, 
+        nx = nx,
+        dt = dt,
+        dx = dx,
+        ice = ice,
+        kd_ice = kd_ice,
+        Tair = Tair(n),
+        CC = CC(n),
+        ea = ea(n),
+        Jsw = Jsw(n),
+        Jlw = Jlw(n),
+        Uw = Uw(n),
+        Pa= Pa(n),
+        RH = RH(n),
+        kd_light = kd_light,
+        Hi = Hi,
+        rho_snow = rho_snow,
+        Hs = Hs)
+    
+    u = heating_res['temp']
+    IceSnowAttCoeff = heating_res['IceSnowAttCoeff']
+    
+    um_heat[:, idn] = u
+    
+    ## (5) ICE AND SNOW
+    ice_res = ice_module(
+        un = u,
+        dt = dt,
+        dx = dx,
+        area = area,
+        Tair = Tair(n),
+        CC = CC(n),
+        ea = ea(n),
+        Jsw = Jsw(n),
+        Jlw = Jlw(n),
+        Uw = Uw(n),
+        Pa= Pa(n),
+        RH = RH(n),
+        PP = PP(n),
+        IceSnowAttCoeff = IceSnowAttCoeff,
+        ice = ice,
+        dt_iceon_avg = dt_iceon_avg,
+        iceT = iceT,
+        supercooled = supercooled,
+        rho_snow = rho_snow,
+        Hi = Hi,
+        Hsi = Hsi,
+        Hs = Hs)
+    
+    u = ice_res['temp']
+    Hi = ice_res['icethickness']
+    Hs = ice_res['snowthickness']
+    Hsi = ice_res['snowicethickness']
+    ice = ice_res['iceFlag']
+    iceT = ice_res['icemovAvg']
+    supercooled = ice_res['supercooled']
+    rho_snow = ice_res['density_snow']
+    
+    um_ice[:, idn] = u
+    
+    ## (2) DIFFUSION
+    diffusion_res = diffusion_module(
+        un = u,
+        kzn = kz,
+        Uw = Uw(n),
+        depth= depth,
+        dx = dx,
+        area = area,
+        dt = dt,
+        nx = nx,
+        ice = ice, 
+        diffusion_method = diffusion_method,
+        scheme = scheme)
+    
+    u = diffusion_res['temp']
+    kz = diffusion_res['diffusivity']
+
+    kzm[:,idn] = kz
+    um_diff[:, idn] = u
+    
+    ## (3) MIXING
+    # mixing_res = mixing_module(
+    #     un = u,
+    #     depth = depth,
+    #     area = area,
+    #     volume = volume,
+    #     dx = dx,
+    #     dt = dt,
+    #     nx = nx,
+    #     Uw = Uw(n),
+    #     ice = ice)
+    
+    # u = mixing_res['temp']
+    
+    um_mix[:, idn] = u
+
+    ## (4) CONVECTION
+    convection_res = convection_module(
+        un = u,
+        nx = nx,
+        volume = volume)
+    
+    u = convection_res['temp']
+    
+    um_conv[:, idn] = u
+    
+    icethickness_prior = Hi
+    snowthickness_prior = Hs
+    snowicethickness_prior = Hsi
+    rho_snow_prior = rho_snow
+    IceSnowAttCoeff_prior = IceSnowAttCoeff
+    ice_prior = ice
+    dt_iceon_avg_prior = dt_iceon_avg
+    iceT_prior = iceT
+    
+
     um[:, idn] = u
     
     Him[0,idn] = Hi
@@ -1964,7 +2305,447 @@ def run_thermalmodel_hybrid(
   m0_PATH =  f"./../MCL/03_finetuning/saved_models/diffusion_model_finetuned.pth"
 
   
-  m0_layers = [14, 32, 32, 1]
+  m0_layers = [11, 32, 32, 1]
+
+  diffusion_model = MLP(m0_layers, activation="gelu")
+  m0_checkpoint = torch.load(m0_PATH, map_location=torch.device('cpu'))
+  diffusion_model.load_state_dict(m0_checkpoint)
+  diffusion_model = diffusion_model.to(device)
+  
+  diffusion_model.train()
+  
+
+  times = np.arange(startTime, endTime, dt)
+  for idn, n in enumerate(times):
+
+    
+
+    if idn  == 0:
+        timeoffset = n
+    
+    un = deepcopy(u)
+    un_initial = un
+    dens_u_n2 = calc_dens(u)
+    time_ind = np.where(times == n)
+
+    um_initial[:, idn] = u
+    
+    if 'kz' in locals():
+        1+1
+    else: 
+        kz = u * 0.0
+        
+    if diffusion_method == 'hendersonSellers':
+        kz = eddy_diffusivity_hendersonSellers(dens_u_n2, depth, g, np.mean(dens_u_n2) , ice, area, Uw(n),  43.100948, u, kz, Cd, km, weight_kz) / 1
+    elif diffusion_method == 'munkAnderson':
+        kz = eddy_diffusivity_munkAnderson(dens_u_n2, depth, g, np.mean(dens_u_n2) , ice, area, Uw(n),  43.100948, Cd, u, kz) / 1
+    elif diffusion_method == 'hondzoStefan':
+        kz = eddy_diffusivity(dens_u_n2, depth, g, np.mean(dens_u_n2) , ice, area, u, kz) / 86400
+    
+    ## (1) HEATING
+    heating_res = heating_module(
+        un = u,
+        area = area,
+        volume = volume,
+        depth = depth, 
+        nx = nx,
+        dt = dt,
+        dx = dx,
+        ice = ice,
+        kd_ice = kd_ice,
+        Tair = Tair(n),
+        CC = CC(n),
+        ea = ea(n),
+        Jsw = Jsw(n),
+        Jlw = Jlw(n),
+        Uw = Uw(n),
+        Pa= Pa(n),
+        RH = RH(n),
+        kd_light = kd_light,
+        Hi = Hi,
+        rho_snow = rho_snow,
+        Hs = Hs)
+    
+    u = heating_res['temp']
+    IceSnowAttCoeff = heating_res['IceSnowAttCoeff']
+    
+    um_heat[:, idn] = u
+    
+    
+    icethickness_prior = Hi
+    snowthickness_prior = Hs
+    snowicethickness_prior = Hsi
+    rho_snow_prior = rho_snow
+    IceSnowAttCoeff_prior = IceSnowAttCoeff
+    ice_prior = ice
+    dt_iceon_avg_prior = dt_iceon_avg
+    iceT_prior = iceT
+    
+    ## (5) ICE AND SNOW
+    ice_res = ice_module(
+        un = u,
+        dt = dt,
+        dx = dx,
+        area = area,
+        Tair = Tair(n),
+        CC = CC(n),
+        ea = ea(n),
+        Jsw = Jsw(n),
+        Jlw = Jlw(n),
+        Uw = Uw(n),
+        Pa= Pa(n),
+        RH = RH(n),
+        PP = PP(n),
+        IceSnowAttCoeff = IceSnowAttCoeff,
+        ice = ice,
+        dt_iceon_avg = dt_iceon_avg,
+        iceT = iceT,
+        supercooled = supercooled,
+        rho_snow = rho_snow,
+        Hi = Hi,
+        Hsi = Hsi,
+        Hs = Hs)
+    
+    u = ice_res['temp']
+    Hi = ice_res['icethickness']
+    Hs = ice_res['snowthickness']
+    Hsi = ice_res['snowicethickness']
+    ice = ice_res['iceFlag']
+    iceT = ice_res['icemovAvg']
+    supercooled = ice_res['supercooled']
+    rho_snow = ice_res['density_snow']
+    
+    um_ice[:, idn] = u
+    
+    Him[0,idn] = Hi
+    Hsm[0,idn] = Hs
+    Hsim[0,idn] = Hsi
+    
+    ## (2) DIFFUSION
+    date_time = daily_meteo.date
+    day_of_year_list = daily_meteo.day_of_year_list
+    time_of_day_list = daily_meteo.time_of_day_list
+    
+    dens_u_n2 = calc_dens(u)
+    rho_0 = np.mean(dens_u_n2)
+    buoy = np.ones(len(depth)) * 7e-5
+    buoy[:-1] = np.abs(dens_u_n2[1:] - dens_u_n2[:-1]) / (depth[1:] - depth[:-1]) * g / rho_0
+    buoy[-1] = buoy[-2]
+    # n2 = 9.81/np.mean(dens_u_n2) * (dens_u_n2[1:] - dens_u_n2[:-1])/dx
+    n2m[:,idn] = buoy # np.concatenate([n2, np.array([np.nan])])
+    
+    # print(day_of_year_list[int(n/dt) + timeoffset])
+    # print(time_of_day_list[int(n/dt) + timeoffset])
+
+    input_data_raw = {'depth':[i for i in range(1,51)],
+                             'Area_m2':np.ones(50) * np.nanmax(area),
+                             'Uw':np.ones(50) * Uw(n),
+                             'buoyancy':buoy,
+                             'day_of_year':np.ones(50) * day_of_year_list[int(n/dt) ],
+                             'time_of_day':np.ones(50) * time_of_day_list[int(n/dt) ],
+                             'ice':np.ones(50) * Hi,
+                             'snow':np.ones(50) * Hs,
+                             'snowice':np.ones(50) * Hsi,
+                             'diffusivity':kz,
+                             'temp_heat01':u}
+                             #'diffusivity':np.ones(25) * kzn}
+    
+
+    input_mcl = pd.DataFrame(input_data_raw)
+
+    input_data = scaler.transform(input_mcl)    
+
+    input_data_tensor = torch.tensor(input_data, device = torch.device('cpu'))
+    
+    
+    output_tensor = diffusion_model(input_data_tensor.float())
+    
+    
+    output_array = output_tensor.detach().cpu().numpy()
+    
+    u = output_array * std_scale + mean_scale
+
+    u = u[:,0]
+
+    
+    um_diff[:, idn] = u
+    kzm[:,idn] = kz
+    
+    ## (3) MIXING    
+    um_mix[:, idn] = u
+
+    ## (4) CONVECTION
+    convection_res = convection_module(
+        un = u,
+        nx = nx,
+        volume = volume)
+    
+    u = convection_res['temp']
+    
+    um_conv[:, idn] = u
+    
+    um[:, idn] = u
+    
+    meteo_pgdl[0, idn] = heating_res['air_temp']
+    meteo_pgdl[1, idn] = heating_res['longwave_flux']
+    meteo_pgdl[2, idn] = heating_res['latent_flux']
+    meteo_pgdl[3, idn] = heating_res['sensible_flux']
+    meteo_pgdl[4, idn] = heating_res['shortwave_flux']
+    meteo_pgdl[5, idn] = heating_res['light']
+    meteo_pgdl[6, idn] = -999 #mixing_res['shear']
+    meteo_pgdl[7, idn] = -999 #mixing_res['tau']
+    meteo_pgdl[8, idn] = np.nanmax(area)
+    meteo_pgdl[9, idn] = CC(n)
+    meteo_pgdl[10, idn] = ea(n)
+    meteo_pgdl[11, idn] = Jlw(n)
+    meteo_pgdl[12, idn] = Uw(n)
+    meteo_pgdl[13, idn] = Pa(n)
+    meteo_pgdl[14, idn] = RH(n)
+    meteo_pgdl[15, idn] = PP(n)
+    meteo_pgdl[16, idn] = IceSnowAttCoeff
+    meteo_pgdl[17, idn] = ice
+    meteo_pgdl[18, idn] = iceT
+    meteo_pgdl[19, idn] = rho_snow
+    meteo_pgdl[20, idn] = icethickness_prior 
+    meteo_pgdl[21, idn] = snowthickness_prior
+    meteo_pgdl[22, idn] = snowicethickness_prior 
+    meteo_pgdl[23, idn] = rho_snow_prior 
+    meteo_pgdl[24, idn] = IceSnowAttCoeff_prior
+    meteo_pgdl[25, idn] = ice_prior
+    meteo_pgdl[26, idn] = dt_iceon_avg_prior
+    meteo_pgdl[27, idn] = iceT_prior
+    
+    dens_u_n2 = calc_dens(u)
+    rho_0 = np.mean(dens_u_n2)
+    buoy = np.ones(len(depth)) * 7e-5
+    buoy[:-1] = np.abs(dens_u_n2[1:] - dens_u_n2[:-1]) / (depth[1:] - depth[:-1]) * g / rho_0
+    buoy[-1] = buoy[-2]
+    # n2 = 9.81/np.mean(dens_u_n2) * (dens_u_n2[1:] - dens_u_n2[:-1])/dx
+    n2m[:,idn] = buoy # np.concatenate([n2, np.array([np.nan])])
+
+  bf_sim = np.apply_along_axis(center_buoyancy, axis=1, arr = um.T, depths=depth)
+  
+
+  df_z_df_sim = pd.DataFrame({'time': times, 'thermoclineDep': bf_sim})
+
+  df_z_df_sim['epi'] = np.nan
+  df_z_df_sim['hypo'] = np.nan
+  df_z_df_sim['tot'] = np.nan
+  df_z_df_sim['stratFlag'] = np.nan
+  for j in range(df_z_df_sim.shape[0]):
+    if np.isnan(df_z_df_sim.loc[j, 'thermoclineDep']):
+      cur_z = 1
+      cur_ind = 0
+    else:
+      cur_z = df_z_df_sim.loc[j, 'thermoclineDep']
+      cur_ind = np.max(np.where(depth < cur_z))
+      
+    df_z_df_sim.loc[j, 'epi'] = np.sum(um[0:(cur_ind + 1), j] * area[0:(cur_ind+1)]) / np.sum(area[0:(cur_ind+1)])
+    df_z_df_sim.loc[j, 'hypo'] = np.sum(um[ cur_ind:, j] * area[cur_ind:]) / np.sum(area[cur_ind:])
+    df_z_df_sim.loc[j, 'tot'] = np.sum(um[:,j] * area) / np.sum(area)
+    if calc_dens(um[-1,j]) - calc_dens(um[0,j]) >= 0.1 and np.mean(um[:,j]) >= 4:
+      df_z_df_sim.loc[j, 'stratFlag'] = 1
+    else:
+      df_z_df_sim.loc[j, 'stratFlag'] = 0
+      
+  dat = {'temp' : um,
+               'diff' : kzm,
+               'icethickness' : Him,
+               'snowthickness' : Hsm,
+               'snowicethickness' : Hsim,
+               'iceflag' : ice,
+               'icemovAvg' : iceT,
+               'supercooled' : supercooled,
+               'endtime' : endTime, 
+               'average' : df_z_df_sim,
+               'temp_initial' : um_initial,
+               'temp_heat' : um_heat,
+               'temp_diff' : um_diff,
+               'temp_mix' : um_mix,
+               'temp_conv' : um_conv,
+               'temp_ice' : um_ice,
+               'meteo_input' : meteo_pgdl,
+               'buoyancy' : n2m,
+               'density_snow' : rho_snow}
+  
+  return(dat)
+
+def run_thermalmodel_hybrid_v2(
+  u, 
+  startTime, 
+  endTime,
+  area,
+  volume,
+  depth,
+  zmax,
+  nx,
+  dt,
+  dx,
+  daily_meteo,
+  secview,
+  std_scale,
+  mean_scale,
+  scaler,
+  test_input,
+  ice=False,
+  Hi=0,
+  iceT=6,
+  supercooled=0,
+  diffusion_method = 'hendersonSellers',
+  scheme='implicit',
+  km = 1.4 * 10**(-7),
+  weight_kz = 0.5, 
+  kd_light=None,
+  denThresh=1e-3,
+  albedo=0.1,
+  eps=0.97,
+  emissivity=0.97,
+  sigma=5.67e-8,
+  sw_factor = 1.0,
+  wind_factor = 1.0,
+  p2=1,
+  B=0.61,
+  g=9.81,
+  Cd=0.0013, # momentum coeff (wind)
+  meltP=1,
+  dt_iceon_avg=0.8,
+  Hgeo=0.1, # geothermal heat
+  KEice=1/1000,
+  Ice_min=0.1,
+  pgdl_mode='on',
+  Hs = 0,
+  rho_snow = 250,
+  Hsi = 0,
+  rho_ice = 910,
+  rho_fw = 1000,
+  rho_new_snow = 250,
+  rho_max_snow = 450,
+  K_ice = 2.1,
+  Cw = 4.18E6,
+  L_ice = 333500,
+  kd_snow = 0.9,
+  kd_ice = 0.7):
+    
+  ## linearization of driver data, so model can have dynamic step
+  Jsw_fillvals = tuple(daily_meteo.Shortwave_Radiation_Downwelling_wattPerMeterSquared.values[[0, -1]])
+  Jsw = interp1d(daily_meteo.dt.values, daily_meteo.Shortwave_Radiation_Downwelling_wattPerMeterSquared.values, kind = "linear", fill_value=Jsw_fillvals, bounds_error=False)
+  Jlw_fillvals = tuple(daily_meteo.Longwave_Radiation_Downwelling_wattPerMeterSquared.values[[0,-1]])
+  Jlw = interp1d(daily_meteo.dt.values, daily_meteo.Longwave_Radiation_Downwelling_wattPerMeterSquared.values, kind = "linear", fill_value=Jlw_fillvals, bounds_error=False)
+  Tair_fillvals = tuple(daily_meteo.Air_Temperature_celsius.values[[0,-1]])
+  Tair = interp1d(daily_meteo.dt.values, daily_meteo.Air_Temperature_celsius.values, kind = "linear", fill_value=Tair_fillvals, bounds_error=False)
+  ea_fillvals = tuple(daily_meteo.ea.values[[0,-1]])
+  ea = interp1d(daily_meteo.dt.values, daily_meteo.ea.values, kind = "linear", fill_value=ea_fillvals, bounds_error=False)
+  Uw_fillvals = tuple(daily_meteo.Ten_Meter_Elevation_Wind_Speed_meterPerSecond.values[[0, -1]])
+  Uw = interp1d(daily_meteo.dt.values, wind_factor * daily_meteo.Ten_Meter_Elevation_Wind_Speed_meterPerSecond.values, kind = "linear", fill_value=Uw_fillvals, bounds_error=False)
+  CC_fillvals = tuple(daily_meteo.Cloud_Cover.values[[0,-1]])
+  CC = interp1d(daily_meteo.dt.values, daily_meteo.Cloud_Cover.values, kind = "linear", fill_value=CC_fillvals, bounds_error=False)
+  Pa_fillvals = tuple(daily_meteo.Surface_Level_Barometric_Pressure_pascal.values[[0,-1]])
+  Pa = interp1d(daily_meteo.dt.values, daily_meteo.Surface_Level_Barometric_Pressure_pascal.values, kind = "linear", fill_value=Pa_fillvals, bounds_error=False)
+  if kd_light is None:
+      kd_fillvals = tuple(secview.kd.values[[0,-1]])
+      kd = interp1d(secview.dt.values, secview.kd.values, kind = "linear", fill_value=kd_fillvals, bounds_error=False)
+  RH_fillvals = tuple(daily_meteo.Relative_Humidity_percent.values[[0,-1]])
+  RH = interp1d(daily_meteo.dt.values, daily_meteo.Relative_Humidity_percent.values, kind = "linear", fill_value=RH_fillvals, bounds_error=False)
+  PP_fillvals = tuple(daily_meteo.Precipitation_millimeterPerDay.values[[0,-1]])
+  PP = interp1d(daily_meteo.dt.values, daily_meteo.Precipitation_millimeterPerDay.values, kind = "linear", fill_value=PP_fillvals, bounds_error=False)
+
+  
+  step_times = np.arange(startTime, endTime, dt)
+  nCol = len(step_times)
+  um = np.full([nx, nCol], np.nan)
+  kzm = np.full([nx, nCol], np.nan)
+  mix_z = np.full([1,nCol], np.nan)
+  Him= np.full([1,nCol], np.nan)
+  Hsm= np.full([1,nCol], np.nan)
+  Hsim= np.full([1,nCol], np.nan)
+  
+
+  um_initial = np.full([nx, nCol], np.nan)
+  um_heat = np.full([nx, nCol], np.nan)
+  um_diff = np.full([nx, nCol], np.nan)
+  um_mix = np.full([nx, nCol], np.nan)
+  um_conv = np.full([nx, nCol], np.nan)
+  um_ice = np.full([nx, nCol], np.nan)
+  n2m = np.full([nx, nCol], np.nan)
+  meteo_pgdl = np.full([28, nCol], np.nan)
+  
+  if not kd_light is None:
+    def kd(n): # using this shortcut for now / testing if it works
+      return kd_light
+
+  # dl preamble
+  device = torch.device('cpu')
+  class MLP(torch.nn.Module):
+    def __init__(self, layers, activation="relu", init="xavier"):
+        super(MLP, self).__init__()
+        
+        # parameters
+        self.depth = len(layers) - 1
+        
+        if activation == "relu":
+            self.activation = torch.nn.ReLU()
+        elif activation == "tanh":
+            self.activation = torch.nn.Tanh()
+        elif activation == "gelu":
+            self.activation = torch.nn.GELU()
+        else:
+            raise ValueError("Unspecified activation type")
+        
+        
+        layer_list = list()
+        for i in range(self.depth - 1): 
+            layer_list.append(
+                ('layer_%d' % i, torch.nn.Linear(layers[i], layers[i+1]))
+            )
+            layer_list.append(('activation_%d' % i, self.activation))
+            
+        layer_list.append(
+            ('layer_%d' % (self.depth - 1), torch.nn.Linear(layers[-2], layers[-1]))
+        )
+        layerDict = OrderedDict(layer_list)
+        
+        # deploy layers
+        self.layers = torch.nn.Sequential(layerDict)
+
+        if init=="xavier":
+            self.xavier_init_weights()
+        elif init=="kaiming":
+            self.kaiming_init_weights()
+    
+    def xavier_init_weights(self):
+        with torch.no_grad():
+            print("Initializing Network with Xavier Initialization..")
+            for m in self.layers.modules():
+                if hasattr(m, 'weight'):
+                    nn.init.xavier_uniform_(m.weight)
+                    m.bias.data.fill_(0.0)
+
+    def kaiming_init_weights(self):
+        with torch.no_grad():
+            print("Initializing Network with Kaiming Initialization..")
+            for m in self.layers.modules():
+                if hasattr(m, 'weight'):
+                    nn.init.kaiming_uniform_(m.weight)
+                    m.bias.data.fill_(0.0)
+                        
+    def forward(self, x):
+        out = self.layers(x)
+        return out
+    
+  class DataGenerator(torch.utils.data.Dataset):
+    def __init__(self, X):
+        self.X = X
+        
+    def __getitem__(self, index):
+        return self.X[index]
+    
+    def __len__(self):
+        return len(self.X)
+  
+  m0_PATH =  f"./../MCL/03_finetuning/saved_models/diffusion_model_finetuned.pth"
+
+  
+  m0_layers = [11, 32, 32, 1]
 
   diffusion_model = MLP(m0_layers, activation="gelu")
   m0_checkpoint = torch.load(m0_PATH, map_location=torch.device('cpu'))
@@ -2025,65 +2806,6 @@ def run_thermalmodel_hybrid(
     
     um_heat[:, idn] = u
     
-    ## (2) DIFFUSION
-    date_time = daily_meteo.date
-    day_of_year_list = daily_meteo.day_of_year_list
-    time_of_day_list = daily_meteo.time_of_day_list
-    
-    dens_u_n2 = calc_dens(u)
-    rho_0 = np.mean(dens_u_n2)
-    buoy = np.ones(len(depth)) * 7e-5
-    buoy[:-1] = np.abs(dens_u_n2[1:] - dens_u_n2[:-1]) / (depth[1:] - depth[:-1]) * g / rho_0
-    buoy[-1] = buoy[-2]
-    # n2 = 9.81/np.mean(dens_u_n2) * (dens_u_n2[1:] - dens_u_n2[:-1])/dx
-    n2m[:,idn] = buoy # np.concatenate([n2, np.array([np.nan])])
-        
-    input_data_raw = {'depth':[i for i in range(1,51)],
-                             'AirTemp_degC':np.ones(50)* heating_res['air_temp'],
-                             'Longwave_Wm-2':np.ones(50)*  heating_res['longwave_flux'],
-                             'Latent_Wm-2':np.ones(50)* heating_res['latent_flux'],
-                             'Sensible_Wm-2':np.ones(50) * heating_res['sensible_flux'],
-                             'Shortwave_Wm-2':np.ones(50) * heating_res['shortwave_flux'],
-                             'lightExtinct_m-1':np.ones(50) * heating_res['light'],
-                             'Area_m2':np.ones(50) * np.nanmax(area),
-                             'Uw':np.ones(50) * Uw(n),
-                             'buoyancy':buoy,
-                             'day_of_year':np.ones(50) * day_of_year_list[int(n/dt)],
-                             'time_of_day':np.ones(50) * time_of_day_list[int(n/dt)],
-                             'diffusivity':kz,
-                             'temp_heat01':u}
-                             #'diffusivity':np.ones(25) * kzn}
-    input_mcl = pd.DataFrame(input_data_raw)
-    input_columns = ['depth', 'AirTemp_degC', 'Longwave_Wm-2', 'Latent_Wm-2', 'Sensible_Wm-2', 'Shortwave_Wm-2',
-                'lightExtinct_m-1', 'Area_m2', 'Uw',
-                 'buoyancy', 'day_of_year', 'time_of_day', 'diffusivity', 'temp_heat01']
-    
-
-    input_data = scaler.transform(input_mcl)    
-
-    input_data_tensor = torch.tensor(input_data, device = torch.device('cpu'))
-    
-    output_tensor = diffusion_model(input_data_tensor.float())
-    
-    output_array = output_tensor.detach().cpu().numpy()
-    
-    u = output_array * std_scale + mean_scale
-
-    u = u[:,0]
-    um_diff[:, idn] = u
-    
-    ## (3) MIXING    
-    um_mix[:, idn] = u
-
-    ## (4) CONVECTION
-    convection_res = convection_module(
-        un = u,
-        nx = nx,
-        volume = volume)
-    
-    u = convection_res['temp']
-    
-    um_conv[:, idn] = u
     
     icethickness_prior = Hi
     snowthickness_prior = Hs
@@ -2129,12 +2851,70 @@ def run_thermalmodel_hybrid(
     rho_snow = ice_res['density_snow']
     
     um_ice[:, idn] = u
-    um[:, idn] = u
     
     Him[0,idn] = Hi
     Hsm[0,idn] = Hs
     Hsim[0,idn] = Hsi
     
+    ## (2) DIFFUSION
+    date_time = daily_meteo.date
+    day_of_year_list = daily_meteo.day_of_year_list
+    time_of_day_list = daily_meteo.time_of_day_list
+    
+    dens_u_n2 = calc_dens(u)
+    rho_0 = np.mean(dens_u_n2)
+    buoy = np.ones(len(depth)) * 7e-5
+    buoy[:-1] = np.abs(dens_u_n2[1:] - dens_u_n2[:-1]) / (depth[1:] - depth[:-1]) * g / rho_0
+    buoy[-1] = buoy[-2]
+    # n2 = 9.81/np.mean(dens_u_n2) * (dens_u_n2[1:] - dens_u_n2[:-1])/dx
+    n2m[:,idn] = buoy # np.concatenate([n2, np.array([np.nan])])
+        
+    input_data_raw = {'depth':[i for i in range(1,51)],
+                             'Area_m2':np.ones(50) * np.nanmax(area),
+                             'Uw':np.ones(50) * Uw(n),
+                             'buoyancy':buoy,
+                             'day_of_year':np.ones(50) * day_of_year_list[int(n/dt)],
+                             'time_of_day':np.ones(50) * time_of_day_list[int(n/dt)],
+                             'ice':np.ones(50) * Hi,
+                             'snow':np.ones(50) * Hs,
+                             'snowice':np.ones(50) * Hsi,
+                             'diffusivity':kz,
+                             'temp_total05':u}
+                             #'diffusivity':np.ones(25) * kzn}
+    input_mcl = pd.DataFrame(input_data_raw)
+
+    input_data = scaler.transform(input_mcl)    
+
+    input_data_tensor = torch.tensor(input_data, device = torch.device('cpu'))
+    
+    
+    output_tensor = diffusion_model(input_data_tensor.float())
+    
+    
+    output_array = output_tensor.detach().cpu().numpy()
+    
+    u = output_array * std_scale + mean_scale
+
+    u = u[:,0]
+
+    
+    um_diff[:, idn] = u
+    kzm[:,idn] = kz
+    
+    ## (3) MIXING    
+    um_mix[:, idn] = u
+
+    ## (4) CONVECTION
+    # convection_res = convection_module(
+    #     un = u,
+    #     nx = nx,
+    #     volume = volume)
+    
+    # u = convection_res['temp']
+    
+    um_conv[:, idn] = u
+    
+    um[:, idn] = u
     
     meteo_pgdl[0, idn] = heating_res['air_temp']
     meteo_pgdl[1, idn] = heating_res['longwave_flux']

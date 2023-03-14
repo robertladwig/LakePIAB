@@ -9,10 +9,10 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from numba import jit
 
-os.chdir("/home/robert/Projects/LakePIAB/src")
-# os.chdir("C:/Users/ladwi/Documents/Projects/R/LakePIAB/src")
+# os.chdir("/home/robert/Projects/LakePIAB/src")
+os.chdir("C:/Users/ladwi/Documents/Projects/R/LakePIAB/src")
 #from oneD_HeatMixing_Functions import get_hyp()sography, provide_meteorology, initial_profile, run_thermalmodel_v1, run_hybridmodel_heating, run_hybridmodel_mixing, run_thermalmodel_v2
-from processBased_lakeModel_functions import get_hypsography, provide_meteorology, initial_profile, run_thermalmodel, run_thermalmodel_specific #, heating_module, diffusion_module, mixing_module, convection_module, ice_module
+from processBased_lakeModel_functions import get_hypsography, provide_meteorology, initial_profile, run_thermalmodel, run_thermalmodel_specific, run_thermalmodel_test #, heating_module, diffusion_module, mixing_module, convection_module, ice_module
 
 
 ## lake configurations
@@ -31,13 +31,13 @@ meteo_all = provide_meteorology(meteofile = '../input/Mendota_2002.csv',
                     windfactor = 1.0)
                      
 hydrodynamic_timestep = 24 * dt
-total_runtime =  365 * 2 # 14 * 365
-startTime = 1#150 * 24 * 3600
+total_runtime =  365 *1 # 14 * 365
+startTime = 365*10#150 * 24 * 3600
 endTime =  (startTime + total_runtime * hydrodynamic_timestep) - 1
 
-startingDate = meteo_all[0]['date'][1]
-endingDate = meteo_all[0]['date'][(startTime + total_runtime) * hydrodynamic_timestep/dt]
-endingDate = meteo_all[0]['date'][(startTime + total_runtime * hydrodynamic_timestep/dt) - 1]
+startingDate = meteo_all[0]['date'][startTime* hydrodynamic_timestep/dt]
+endingDate = meteo_all[0]['date'][(startTime + total_runtime) * hydrodynamic_timestep/dt -1]
+# endingDate = meteo_all[0]['date'][(startTime + total_runtime * hydrodynamic_timestep/dt) - 1]
 
 #26280
 times = pd.date_range(startingDate, endingDate, freq='H')
@@ -52,7 +52,7 @@ u_ini = initial_profile(initfile = '../input/observedTemp.txt', nx = nx, dx = dx
 Start = datetime.datetime.now()
 
     
-res = run_thermalmodel(  
+res = run_thermalmodel_test(  
     u = deepcopy(u_ini),
     startTime = startTime, 
     endTime = ( startTime + total_runtime * hydrodynamic_timestep) - 1,
@@ -245,3 +245,23 @@ ax = df_20m_observed.plot(x='datetime', y=['wtemp'], color="black", style = '.')
 df_20m_simulated.plot(x='datetime', y=['wtemp'], color="blue", ax = ax)
 plt.show()
 
+
+
+dt = pd.read_csv('../input/observed_df_lter_hourly_wide.csv', index_col=0)
+dt=dt.rename(columns = {'DateTime':'time'})
+dt['time'] = pd.to_datetime(dt['time'], format='%Y-%m-%d %H')
+dt_red = dt[dt['time'] >= startingDate]
+dt_red = dt_red[dt_red['time'] <= endingDate]
+dt_notime = dt_red.drop(dt_red.columns[[0]], axis = 1)
+dt_notime = dt_notime.transpose()
+dt_obs = dt_notime.to_numpy()
+dt_obs.shape
+temp.shape
+
+number_days =temp.shape[1]
+training_frac = 0.6
+n_obs = int(number_days*training_frac)
+
+rmse = sqrt(sum(sum((temp - dt_obs)**2)) / (temp.shape[0] * temp.shape[1]))
+train = sqrt(sum(sum((temp[:,0:n_obs] - dt_obs[:,0:n_obs])**2)) / (temp.shape[0] * n_obs))
+test = sqrt(sum(sum((temp[:,(n_obs+1):temp.shape[1]] - dt_obs[:,(n_obs+1):temp.shape[1]])**2)) / (temp.shape[0] * (temp.shape[1] - n_obs)))

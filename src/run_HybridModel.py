@@ -10,8 +10,9 @@ import seaborn as sns
 from sklearn.preprocessing import StandardScaler
 import torch
 
-os.chdir("/home/robert/Projects/LakePIAB/src")
-from processBased_lakeModel_functions import get_hypsography, provide_meteorology, initial_profile, run_thermalmodel, run_thermalmodel, heating_module, diffusion_module, mixing_module, convection_module, ice_module, run_thermalmodel_hybrid
+#os.chdir("/home/robert/Projects/LakePIAB/src")
+os.chdir("C:/Users/ladwi/Documents/Projects/R/LakePIAB/src")
+from processBased_lakeModel_functions import get_hypsography, provide_meteorology, initial_profile, run_thermalmodel, run_thermalmodel, heating_module, diffusion_module, mixing_module, convection_module, ice_module, run_thermalmodel_hybrid, run_thermalmodel_hybrid_v2
 
 ## get normalization variables from deep learning
 device = torch.device('cpu')
@@ -24,9 +25,8 @@ data_df = data_df.drop(columns=['time'])
 #m0_input_columns = ['depth', 'AirTemp_degC', 'Longwave_Wm-2', 'Latent_Wm-2', 'Sensible_Wm-2', 'Shortwave_Wm-2',
  #               'lightExtinct_m-1','Area_m2', 
   #               'day_of_year', 'time_of_day', 'ice', 'snow', 'snowice', 'temp_initial00']
-m0_input_columns = ['depth', 'AirTemp_degC', 'Longwave_Wm-2', 'Latent_Wm-2', 'Sensible_Wm-2', 'Shortwave_Wm-2',
-                'lightExtinct_m-1', 'Area_m2', 'Uw',
-                 'buoyancy', 'day_of_year', 'time_of_day', 'diffusivity', 'temp_heat01']
+m0_input_columns = ['depth', 'Area_m2', 'Uw',
+                 'buoyancy', 'day_of_year', 'time_of_day',  'ice', 'snow', 'snowice','diffusivity', 'temp_total05']
 m0_input_column_ix = [data_df.columns.get_loc(column) for column in m0_input_columns]
 
 data_df_scaler = data_df[data_df.columns[m0_input_column_ix]]
@@ -69,7 +69,7 @@ train_data = scaler.transform(train_data)
 train_mean = scaler.mean_
 train_std = scaler.scale_
 
-m0_output_columns = ['temp_diff02']
+m0_output_columns = ['temp_conv04']
 m0_output_column_ix = [data_df.columns.get_loc(column) for column in m0_output_columns]
 
 std_scale = torch.tensor(train_std[m0_output_column_ix[0]]).to(device).numpy()
@@ -89,11 +89,12 @@ hyps_all = get_hypsography(hypsofile = '../input/bathymetry.csv',
 ## atmospheric boundary conditions
 meteo_all = provide_meteorology(meteofile = '../input/Mendota_2002.csv',
                     secchifile = None, 
+                    
                     windfactor = 1.0)
                      
 hydrodynamic_timestep = 24 * dt
-total_runtime =  365 *4 # 14 * 365
-startTime = 365*8#150 * 24 * 3600
+total_runtime =  365 #365 *1 # 14 * 365
+startTime =  365*10#150 * 24 * 3600
 endTime =  (startTime + total_runtime * hydrodynamic_timestep) - 1
 
 startingDate = meteo_all[0]['date'][startTime* hydrodynamic_timestep/dt]
@@ -217,6 +218,44 @@ sns.heatmap(diff, cmap=plt.cm.get_cmap('Spectral_r'), xticklabels=1000, yticklab
 plt.show()
     
 # heatmap of temps  
+N_pts = 6
+
+fig, ax = plt.subplots(figsize=(10,8))
+sns.heatmap(temp, cmap=plt.cm.get_cmap('Spectral_r'),  xticklabels=1000, yticklabels=2, vmin = 0, vmax = 35)
+ax.set_ylabel("Depth", fontsize=15)
+ax.set_xlabel("Time", fontsize=15)    
+ax.collections[0].colorbar.set_label("Hybrid Temperature")
+xticks_ix = np.array(ax.get_xticks()).astype(int)
+time_label = times[xticks_ix]
+nelement = len(times)//N_pts
+time_label = time_label[::nelement]
+ax.xaxis.set_major_locator(plt.MaxNLocator(N_pts))
+ax.set_xticklabels(time_label, rotation=0)
+plt.show()
+
+dt = pd.read_csv('../input/observed_df_lter_hourly_wide.csv', index_col=0)
+dt=dt.rename(columns = {'DateTime':'time'})
+dt['time'] = pd.to_datetime(dt['time'], format='%Y-%m-%d %H')
+dt_red = dt[dt['time'] >= startingDate]
+dt_red = dt_red[dt_red['time'] <= endingDate]
+dt_notime = dt_red.drop(dt_red.columns[[0]], axis = 1)
+dt_notime = dt_notime.transpose()
+dt_obs = dt_notime.to_numpy()
+dt_obs.shape
+temp.shape
+
+number_days =temp.shape[1]
+training_frac = 0.6
+n_obs = int(number_days*training_frac)
+
+rmse = sqrt(sum(sum((temp - dt_obs)**2)) / (temp.shape[0] * temp.shape[1]))
+train = sqrt(sum(sum((temp[:,0:n_obs] - dt_obs[:,0:n_obs])**2)) / (temp.shape[0] * n_obs))
+test = sqrt(sum(sum((temp[:,(n_obs+1):temp.shape[1]] - dt_obs[:,(n_obs+1):temp.shape[1]])**2)) / (temp.shape[0] * (temp.shape[1] - n_obs)))
+
+sqrt(sum((temp[0,:] - dt_obs[0,:])**2) / (len(temp[0,:])))
+sqrt(sum((temp[49,:] - dt_obs[49,:])**2) / (len(temp[49,:])))
+
+# heatmap of temps  
 plt.subplots(figsize=(40,40))
-sns.heatmap(temp, cmap=plt.cm.get_cmap('Spectral_r'), xticklabels=1000, yticklabels=2)
+sns.heatmap(dt_obs, cmap=plt.cm.get_cmap('Spectral_r'), xticklabels=1000, yticklabels=2)
 plt.show()
