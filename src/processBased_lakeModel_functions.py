@@ -970,7 +970,7 @@ def convection_module(
       for dep in range(0, nx-1):
         if dens_u[dep+1] < dens_u[dep] and abs(dens_u[dep+1] - dens_u[dep]) >= denThresh:
           u[(dep):(dep+2)] = np.sum(u[(dep):(dep+2)] * volume[(dep):(dep+2)])/np.sum(volume[(dep):(dep+2)])
-          break
+          dens_u = calc_dens(u)#break
       
       dens_u = calc_dens(u)
       diff_dens_u = np.diff(dens_u)
@@ -2341,6 +2341,9 @@ def run_thermalmodel_hybrid(
     elif diffusion_method == 'hondzoStefan':
         kz = eddy_diffusivity(dens_u_n2, depth, g, np.mean(dens_u_n2) , ice, area, u, kz) / 86400
     
+    if (int(time_of_day(n)) == 1):
+        print(int(day_of_year(n)))
+    
     ## (1) HEATING
     heating_res = heating_module(
         un = u,
@@ -2475,12 +2478,12 @@ def run_thermalmodel_hybrid(
     um_mix[:, idn] = u
 
     ## (4) CONVECTION
-    convection_res = convection_module(
-        un = u,
-        nx = nx,
-        volume = volume)
+    # convection_res = convection_module(
+    #     un = u,
+    #     nx = nx,
+    #     volume = volume)
     
-    u = convection_res['temp']
+    # u = convection_res['temp']
     
     um_conv[:, idn] = u
     
