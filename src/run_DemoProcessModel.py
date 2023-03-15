@@ -45,8 +45,8 @@ meteo_all = provide_meteorology(meteofile = '../input/Mendota_2002.csv',
 # nTotalSteps = int(total_runtime * hydrodynamic_timestep/ dt)
 
 hydrodynamic_timestep = 24 * dt
-total_runtime =  90 * hydrodynamic_timestep/dt  #365 *1 # 14 * 365
-startTime =   (180 + 365*10) * hydrodynamic_timestep/dt #150 * 24 * 3600
+total_runtime =  (365*2) * hydrodynamic_timestep/dt  #365 *1 # 14 * 365
+startTime =   (0 + 365*10) * hydrodynamic_timestep/dt #150 * 24 * 3600
 endTime =  (startTime + total_runtime) # * hydrodynamic_timestep/dt) - 1
 
 startingDate = meteo_all[0]['date'][startTime] #* hydrodynamic_timestep/dt]

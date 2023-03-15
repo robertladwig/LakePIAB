@@ -2209,7 +2209,7 @@ def run_thermalmodel_hybrid(
   time_of_day = interp1d(daily_meteo.dt.values, daily_meteo.time_of_day_list.values, kind = "linear", fill_value=time_of_day_fillvals, bounds_error=False)
  
   
-  step_times = np.arange(startTime, endTime, dt)
+  step_times = np.arange(startTime* dt, endTime *dt, dt)
   nCol = len(step_times)
   um = np.full([nx, nCol], np.nan)
   kzm = np.full([nx, nCol], np.nan)
