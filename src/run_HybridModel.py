@@ -96,7 +96,7 @@ meteo_all = provide_meteorology(meteofile = '../input/Mendota_2002.csv',
 hydrodynamic_timestep = 24 * dt
 total_runtime =  90 * hydrodynamic_timestep/dt  #365 *1 # 14 * 365
 startTime =   (180 + 365*10) * hydrodynamic_timestep/dt #150 * 24 * 3600
-endTime =  (startTime + total_runtime * hydrodynamic_timestep/dt) - 1
+endTime =  (startTime + total_runtime) # * hydrodynamic_timestep/dt) - 1
 
 startingDate = meteo_all[0]['date'][startTime] #* hydrodynamic_timestep/dt]
 endingDate = meteo_all[0]['date'][(startTime + total_runtime)]# * hydrodynamic_timestep/dt -1]
@@ -117,7 +117,7 @@ Start = datetime.datetime.now()
 res = run_thermalmodel_hybrid(
     u = deepcopy(u_ini),
     startTime = startTime, 
-    endTime =  (startTime + total_runtime * hydrodynamic_timestep) - 1,
+    endTime =  endTime, #(startTime + total_runtime * hydrodynamic_timestep) - 1,
     area = hyps_all[0][:-1],
     volume = hyps_all[2][:-1],
     depth = hyps_all[1][:-1],

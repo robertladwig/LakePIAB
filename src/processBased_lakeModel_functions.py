@@ -2436,7 +2436,7 @@ def run_thermalmodel_hybrid(
     # print(day_of_year_list[int(n/dt) + timeoffset])
     # print(time_of_day_list[int(n/dt) + timeoffset])
 
-#    breakpoint()
+
     input_data_raw = {'depth':[i for i in range(1,51)],
                              'Area_m2':np.ones(50) * np.nanmax(area),
                              'Uw':np.ones(50) * Uw(n),

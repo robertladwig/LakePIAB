@@ -9,8 +9,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from numba import jit
 
-# os.chdir("/home/robert/Projects/LakePIAB/src")
-os.chdir("C:/Users/ladwi/Documents/Projects/R/LakePIAB/src")
+os.chdir("/home/robert/Projects/LakePIAB/src")
+#os.chdir("C:/Users/ladwi/Documents/Projects/R/LakePIAB/src")
 #from oneD_HeatMixing_Functions import get_hyp()sography, provide_meteorology, initial_profile, run_thermalmodel_v1, run_hybridmodel_heating, run_hybridmodel_mixing, run_thermalmodel_v2
 from processBased_lakeModel_functions import get_hypsography, provide_meteorology, initial_profile, run_thermalmodel, run_thermalmodel_specific, run_thermalmodel_test #, heating_module, diffusion_module, mixing_module, convection_module, ice_module
 
@@ -45,9 +45,9 @@ meteo_all = provide_meteorology(meteofile = '../input/Mendota_2002.csv',
 # nTotalSteps = int(total_runtime * hydrodynamic_timestep/ dt)
 
 hydrodynamic_timestep = 24 * dt
-total_runtime =  (2*365) * hydrodynamic_timestep/dt  #365 *1 # 14 * 365
-startTime =   (365*10) * hydrodynamic_timestep/dt #150 * 24 * 3600
-endTime =  (startTime + total_runtime * hydrodynamic_timestep/dt) - 1
+total_runtime =  90 * hydrodynamic_timestep/dt  #365 *1 # 14 * 365
+startTime =   (180 + 365*10) * hydrodynamic_timestep/dt #150 * 24 * 3600
+endTime =  (startTime + total_runtime) # * hydrodynamic_timestep/dt) - 1
 
 startingDate = meteo_all[0]['date'][startTime] #* hydrodynamic_timestep/dt]
 endingDate = meteo_all[0]['date'][(startTime + total_runtime)]# * hydrodynamic_timestep/dt -1]
