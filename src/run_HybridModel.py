@@ -11,8 +11,8 @@ import seaborn as sns
 from sklearn.preprocessing import StandardScaler
 import torch
 
-os.chdir("/home/robert/Projects/LakePIAB/src")
-#os.chdir("C:/Users/ladwi/Documents/Projects/R/LakePIAB/src")
+#os.chdir("/home/robert/Projects/LakePIAB/src")
+os.chdir("C:/Users/ladwi/Documents/Projects/R/LakePIAB/src")
 from processBased_lakeModel_functions import get_hypsography, provide_meteorology, initial_profile, run_thermalmodel, run_thermalmodel, heating_module, diffusion_module, mixing_module, convection_module, ice_module, run_thermalmodel_hybrid, run_thermalmodel_hybrid_v2
 
 ## get normalization variables from deep learning
