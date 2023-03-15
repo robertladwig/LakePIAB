@@ -966,12 +966,18 @@ def convection_module(
     diff_dens_u[abs(diff_dens_u) <= denThresh] = 0
     un = u 
     while np.any(diff_dens_u < 0):
+      # dens_u = calc_dens(u)
+      # for dep in range(0, nx-1):
+      #   if dens_u[dep+1] < dens_u[dep] and abs(dens_u[dep+1] - dens_u[dep]) >= denThresh:
+      #     u[(dep):(dep+2)] = np.sum(u[(dep):(dep+2)] * volume[(dep):(dep+2)])/np.sum(volume[(dep):(dep+2)])
+          # break
       dens_u = calc_dens(u)
       for dep in range(0, nx-1):
         if dens_u[dep+1] < dens_u[dep] and abs(dens_u[dep+1] - dens_u[dep]) >= denThresh:
           u[(dep):(dep+2)] = np.sum(u[(dep):(dep+2)] * volume[(dep):(dep+2)])/np.sum(volume[(dep):(dep+2)])
-          break
-      
+          dens_u = calc_dens(u)
+          
+        
       dens_u = calc_dens(u)
       diff_dens_u = np.diff(dens_u)
       diff_dens_u[abs(diff_dens_u) <= denThresh] = 0
@@ -1579,8 +1585,7 @@ def run_thermalmodel_test(
 
   
 
-  #times = np.arange(startTime, endTime, dt)
-  times = np.arange(startTime * dt, endTime * dt, dt)
+  times = np.arange(startTime, endTime, dt)
   for idn, n in enumerate(times):
     
     un = deepcopy(u)
@@ -2207,7 +2212,7 @@ def run_thermalmodel_hybrid(
   day_of_year = interp1d(daily_meteo.dt.values, daily_meteo.day_of_year_list.values, kind = "linear", fill_value=day_of_year_fillvals, bounds_error=False)
   time_of_day_fillvals = tuple(daily_meteo.time_of_day_list.values[[0,-1]])
   time_of_day = interp1d(daily_meteo.dt.values, daily_meteo.time_of_day_list.values, kind = "linear", fill_value=time_of_day_fillvals, bounds_error=False)
- 
+
   
   step_times = np.arange(startTime, endTime, dt)
   nCol = len(step_times)
@@ -2314,7 +2319,7 @@ def run_thermalmodel_hybrid(
   diffusion_model.train()
   
 
-  times = np.arange(startTime * dt, endTime * dt, dt)
+  times = np.arange(startTime, endTime, dt)
   for idn, n in enumerate(times):
 
     
@@ -2436,7 +2441,7 @@ def run_thermalmodel_hybrid(
     # print(day_of_year_list[int(n/dt) + timeoffset])
     # print(time_of_day_list[int(n/dt) + timeoffset])
 
-#    breakpoint()
+    # breakpoint()
     input_data_raw = {'depth':[i for i in range(1,51)],
                              'Area_m2':np.ones(50) * np.nanmax(area),
                              'Uw':np.ones(50) * Uw(n),
