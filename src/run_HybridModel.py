@@ -11,8 +11,8 @@ import seaborn as sns
 from sklearn.preprocessing import StandardScaler
 import torch
 
-#os.chdir("/home/robert/Projects/LakePIAB/src")
-os.chdir("C:/Users/ladwi/Documents/Projects/R/LakePIAB/src")
+os.chdir("/home/robert/Projects/LakePIAB/src")
+#os.chdir("C:/Users/ladwi/Documents/Projects/R/LakePIAB/src")
 from processBased_lakeModel_functions import get_hypsography, provide_meteorology, initial_profile, run_thermalmodel, run_thermalmodel, heating_module, diffusion_module, mixing_module, convection_module, ice_module, run_thermalmodel_hybrid, run_thermalmodel_hybrid_v2
 
 ## get normalization variables from deep learning
@@ -94,18 +94,18 @@ meteo_all = provide_meteorology(meteofile = '../input/Mendota_2002.csv',
                     windfactor = 1.0)
                      
 hydrodynamic_timestep = 24 * dt
-total_runtime =  365 #365 *1 # 14 * 365
-startTime =   365*10#150 * 24 * 3600
-endTime =  (startTime + total_runtime * hydrodynamic_timestep) - 1
+total_runtime =  90 * hydrodynamic_timestep/dt  #365 *1 # 14 * 365
+startTime =   (180 + 365*10) * hydrodynamic_timestep/dt #150 * 24 * 3600
+endTime =  (startTime + total_runtime * hydrodynamic_timestep/dt) - 1
 
-startingDate = meteo_all[0]['date'][startTime* hydrodynamic_timestep/dt]
-endingDate = meteo_all[0]['date'][(startTime + total_runtime) * hydrodynamic_timestep/dt -1]
+startingDate = meteo_all[0]['date'][startTime] #* hydrodynamic_timestep/dt]
+endingDate = meteo_all[0]['date'][(startTime + total_runtime)]# * hydrodynamic_timestep/dt -1]
 # endingDate = meteo_all[0]['date'][(startTime + total_runtime * hydrodynamic_timestep/dt) - 1]
 
 #26280
 times = pd.date_range(startingDate, endingDate, freq='H')
 
-nTotalSteps = int(total_runtime * hydrodynamic_timestep/ dt)
+nTotalSteps = int(total_runtime) #  * hydrodynamic_timestep/ dt)
 
 ## here we define our initial profile
 u_ini = initial_profile(initfile = '../input/observedTemp.txt', nx = nx, dx = dx,
