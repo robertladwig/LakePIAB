@@ -30,12 +30,12 @@ meteo_all = provide_meteorology(meteofile = '../input/Mendota_2002.csv',
                     windfactor = 1.0)
                      
 hydrodynamic_timestep = 24 * dt
-total_runtime =  (365*2) * hydrodynamic_timestep/dt  #365 *1 # 14 * 365
+total_runtime =  (365*4) * hydrodynamic_timestep/dt  #365 *1 # 14 * 365
 startTime =   (0 + 365*10) * hydrodynamic_timestep/dt #150 * 24 * 3600
-endTime =  (startTime + total_runtime) # * hydrodynamic_timestep/dt) - 1
+endTime =  (startTime + total_runtime)  # * hydrodynamic_timestep/dt) - 1
 
 startingDate = meteo_all[0]['date'][startTime] #* hydrodynamic_timestep/dt]
-endingDate = meteo_all[0]['date'][(startTime + total_runtime)]# * hydrodynamic_timestep/dt -1]
+endingDate = meteo_all[0]['date'][(endTime-1)]#meteo_all[0]['date'][(startTime + total_runtime)]# * hydrodynamic_timestep/dt -1]
 # endingDate = meteo_all[0]['date'][(startTime + total_runtime * hydrodynamic_timestep/dt) - 1]
 
 #26280
@@ -270,7 +270,7 @@ dt = pd.read_csv('../input/observed_df_lter_hourly_wide.csv', index_col=0)
 dt=dt.rename(columns = {'DateTime':'time'})
 dt['time'] = pd.to_datetime(dt['time'], format='%Y-%m-%d %H')
 dt_red = dt[dt['time'] >= startingDate]
-dt_red = dt_red[dt_red['time'] < endingDate]
+dt_red = dt_red[dt_red['time'] <= endingDate]
 dt_red.to_csv('../output/py_observed_temp.csv', index=None, na_rep='-999')
 
              
