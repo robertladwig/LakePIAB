@@ -1554,7 +1554,7 @@ def run_thermalmodel_test(
   PP = interp1d(daily_meteo.dt.values, daily_meteo.Precipitation_millimeterPerDay.values, kind = "linear", fill_value=PP_fillvals, bounds_error=False)
 
   
-  step_times = np.arange(startTime, endTime, dt)
+  step_times = np.arange(startTime*dt, endTime*dt, dt)
   nCol = len(step_times)
   um = np.full([nx, nCol], np.nan)
   kzm = np.full([nx, nCol], np.nan)
@@ -1587,7 +1587,7 @@ def run_thermalmodel_test(
     un_initial = un
     dens_u_n2 = calc_dens(u)
     time_ind = np.where(times == n)
-
+    
     um_initial[:, idn] = u
     
     if 'kz' in locals():
