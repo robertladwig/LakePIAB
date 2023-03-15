@@ -10,8 +10,8 @@ import seaborn as sns
 from sklearn.preprocessing import StandardScaler
 import torch
 
-#os.chdir("/home/robert/Projects/LakePIAB/src")
-os.chdir("C:/Users/ladwi/Documents/Projects/R/LakePIAB/src")
+os.chdir("/home/robert/Projects/LakePIAB/src")
+#os.chdir("C:/Users/ladwi/Documents/Projects/R/LakePIAB/src")
 from processBased_lakeModel_functions import get_hypsography, provide_meteorology, initial_profile, run_thermalmodel, run_thermalmodel, heating_module, diffusion_module, mixing_module, convection_module, ice_module, run_thermalmodel_hybrid, run_thermalmodel_hybrid_v2
 
 ## get normalization variables from deep learning
@@ -69,7 +69,7 @@ train_data = scaler.transform(train_data)
 train_mean = scaler.mean_
 train_std = scaler.scale_
 
-m0_output_columns = ['temp_conv04']
+m0_output_columns = ['temp_diff02']
 m0_output_column_ix = [data_df.columns.get_loc(column) for column in m0_output_columns]
 
 std_scale = torch.tensor(train_std[m0_output_column_ix[0]]).to(device).numpy()
@@ -94,7 +94,7 @@ meteo_all = provide_meteorology(meteofile = '../input/Mendota_2002.csv',
                      
 hydrodynamic_timestep = 24 * dt
 total_runtime =  365 #365 *1 # 14 * 365
-startTime =  365*10#150 * 24 * 3600
+startTime =   365*10#150 * 24 * 3600
 endTime =  (startTime + total_runtime * hydrodynamic_timestep) - 1
 
 startingDate = meteo_all[0]['date'][startTime* hydrodynamic_timestep/dt]
@@ -256,6 +256,16 @@ sqrt(sum((temp[0,:] - dt_obs[0,:])**2) / (len(temp[0,:])))
 sqrt(sum((temp[49,:] - dt_obs[49,:])**2) / (len(temp[49,:])))
 
 # heatmap of temps  
-plt.subplots(figsize=(40,40))
-sns.heatmap(dt_obs, cmap=plt.cm.get_cmap('Spectral_r'), xticklabels=1000, yticklabels=2)
+fig, ax = plt.subplots(figsize=(10,8))
+sns.heatmap(dt_obs, cmap=plt.cm.get_cmap('Spectral_r'),  xticklabels=1000, yticklabels=2, vmin = 0, vmax = 35)
+ax.set_ylabel("Depth", fontsize=15)
+ax.set_xlabel("Time", fontsize=15)    
+ax.collections[0].colorbar.set_label("Observed Temperature")
+xticks_ix = np.array(ax.get_xticks()).astype(int)
+time_label = times[xticks_ix]
+nelement = len(times)//N_pts
+time_label = time_label[::nelement]
+ax.xaxis.set_major_locator(plt.MaxNLocator(N_pts))
+ax.set_xticklabels(time_label, rotation=0)
 plt.show()
+

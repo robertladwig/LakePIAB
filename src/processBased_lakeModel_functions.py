@@ -2208,6 +2208,10 @@ def run_thermalmodel_hybrid(
   RH = interp1d(daily_meteo.dt.values, daily_meteo.Relative_Humidity_percent.values, kind = "linear", fill_value=RH_fillvals, bounds_error=False)
   PP_fillvals = tuple(daily_meteo.Precipitation_millimeterPerDay.values[[0,-1]])
   PP = interp1d(daily_meteo.dt.values, daily_meteo.Precipitation_millimeterPerDay.values, kind = "linear", fill_value=PP_fillvals, bounds_error=False)
+  day_of_year_fillvals = tuple(daily_meteo.day_of_year_list.values[[0,-1]])
+  day_of_year = interp1d(daily_meteo.dt.values, daily_meteo.day_of_year_list.values, kind = "linear", fill_value=day_of_year_fillvals, bounds_error=False)
+  time_of_day_fillvals = tuple(daily_meteo.time_of_day_list.values[[0,-1]])
+  time_of_day = interp1d(daily_meteo.dt.values, daily_meteo.time_of_day_list.values, kind = "linear", fill_value=time_of_day_fillvals, bounds_error=False)
 
   
   step_times = np.arange(startTime, endTime, dt)
@@ -2437,12 +2441,13 @@ def run_thermalmodel_hybrid(
     # print(day_of_year_list[int(n/dt) + timeoffset])
     # print(time_of_day_list[int(n/dt) + timeoffset])
 
+    # breakpoint()
     input_data_raw = {'depth':[i for i in range(1,51)],
                              'Area_m2':np.ones(50) * np.nanmax(area),
                              'Uw':np.ones(50) * Uw(n),
                              'buoyancy':buoy,
-                             'day_of_year':np.ones(50) * day_of_year_list[int(n/dt) ],
-                             'time_of_day':np.ones(50) * time_of_day_list[int(n/dt) ],
+                             'day_of_year':np.ones(50) * int(day_of_year(n)),
+                             'time_of_day':np.ones(50) * int(time_of_day(n)),
                              'ice':np.ones(50) * Hi,
                              'snow':np.ones(50) * Hs,
                              'snowice':np.ones(50) * Hsi,
