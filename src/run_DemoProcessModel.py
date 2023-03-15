@@ -265,7 +265,7 @@ dt = pd.read_csv('../input/observed_df_lter_hourly_wide.csv', index_col=0)
 dt=dt.rename(columns = {'DateTime':'time'})
 dt['time'] = pd.to_datetime(dt['time'], format='%Y-%m-%d %H')
 dt_red = dt[dt['time'] >= startingDate]
-dt_red = dt_red[dt_red['time'] <= endingDate]
+dt_red = dt_red[dt_red['time'] < endingDate]
 dt_notime = dt_red.drop(dt_red.columns[[0]], axis = 1)
 dt_notime = dt_notime.transpose()
 dt_obs = dt_notime.to_numpy()
