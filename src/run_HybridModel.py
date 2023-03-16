@@ -11,8 +11,8 @@ import seaborn as sns
 from sklearn.preprocessing import StandardScaler
 import torch
 
-#os.chdir("/home/robert/Projects/LakePIAB/src")
-os.chdir("C:/Users/ladwi/Documents/Projects/R/LakePIAB/src")
+os.chdir("/home/robert/Projects/LakePIAB/src")
+#os.chdir("C:/Users/ladwi/Documents/Projects/R/LakePIAB/src")
 from processBased_lakeModel_functions import get_hypsography, provide_meteorology, initial_profile, run_thermalmodel, run_thermalmodel, heating_module, diffusion_module, mixing_module, convection_module, ice_module, run_thermalmodel_hybrid, run_thermalmodel_hybrid_v2
 
 ## get normalization variables from deep learning
@@ -76,6 +76,9 @@ m0_output_column_ix = [data_df.columns.get_loc(column) for column in m0_output_c
 std_scale = torch.tensor(train_std[m0_output_column_ix[0]]).to(device).numpy()
 mean_scale = torch.tensor(train_mean[m0_output_column_ix[0]]).to(device).numpy()
 
+std_input = torch.tensor(train_std[m0_input_column_ix]).to(device).numpy()
+mean_input = torch.tensor(train_mean[m0_input_column_ix]).to(device).numpy()
+
                   
 ## lake configurations
 zmax = 25 # maximum lake depth
@@ -127,6 +130,8 @@ res = run_thermalmodel_hybrid(
     dx = dx,
     std_scale = std_scale,
     mean_scale = mean_scale,
+    std_input = std_input,
+    mean_input = mean_input,
     scaler = scaler_input,
     test_input = data_df_scaler.head(n=50),
     daily_meteo = meteo_all[0],
