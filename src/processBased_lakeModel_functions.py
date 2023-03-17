@@ -80,8 +80,7 @@ def eddy_diffusivity_hendersonSellers(rho, depth, g, rho_0, ice, area, U10, lati
     w_star = Cd * U2
     k_star = 6.6 * (sin(radians(latitude)))**(1/2) * U2**(-1.84)
     
-    
-    
+
     buoy = np.ones(len(depth)) * 7e-5
     buoy[:-1] = np.abs(rho[1:] - rho[:-1]) / (depth[1:] - depth[:-1]) * g / rho_0
     buoy[-1] = buoy[-2]
@@ -1948,51 +1947,6 @@ def run_thermalmodel_specific(
   
   um_heat[:, idn] = u
   
-  ## (2) DIFFUSION
-  diffusion_res = diffusion_module(
-    un = u,
-    kzn = kz,
-    Uw = Uw,
-    depth= depth,
-    dx = dx,
-    area = area,
-    dt = dt,
-    nx = nx,
-    ice = ice, 
-    diffusion_method = diffusion_method,
-    scheme = scheme)
-  
-  u = diffusion_res['temp']
-  kz = diffusion_res['diffusivity']
-  
-  kzm[:,idn] = kz
-  um_diff[:, idn] = u
-  
-  ## (3) MIXING
-  mixing_res = mixing_module(
-    un = u,
-    depth = depth,
-    area = area,
-    volume = volume,
-    dx = dx,
-    dt = dt,
-    nx = nx,
-    Uw = Uw,
-    ice = ice)
-  
-  u = mixing_res['temp']
-  
-  um_mix[:, idn] = u
-  
-  ## (4) CONVECTION
-  convection_res = convection_module(
-    un = u,
-    nx = nx,
-    volume = volume)
-  
-  u = convection_res
-  
-  um_conv[:, idn] = u
   
   icethickness_prior = Hi
   snowthickness_prior = Hs
@@ -2038,11 +1992,58 @@ def run_thermalmodel_specific(
   rho_snow = ice_res['density_snow']
   
   um_ice[:, idn] = u
-  um[:, idn] = u
   
   Him[0,idn] = Hi
   Hsm[0,idn] = Hs
   Hsim[0,idn] = Hsi
+  
+  ## (2) DIFFUSION
+  diffusion_res = diffusion_module(
+    un = u,
+    kzn = kz,
+    Uw = Uw,
+    depth= depth,
+    dx = dx,
+    area = area,
+    dt = dt,
+    nx = nx,
+    ice = ice, 
+    diffusion_method = diffusion_method,
+    scheme = scheme)
+  
+  u = diffusion_res['temp']
+  kz = diffusion_res['diffusivity']
+  
+  kzm[:,idn] = kz
+  um_diff[:, idn] = u
+  
+  ## (3) MIXING
+  # mixing_res = mixing_module(
+  #   un = u,
+  #   depth = depth,
+  #   area = area,
+  #   volume = volume,
+  #   dx = dx,
+  #   dt = dt,
+  #   nx = nx,
+  #   Uw = Uw,
+  #   ice = ice)
+  
+  # u = mixing_res['temp']
+  
+  um_mix[:, idn] = u
+  
+  ## (4) CONVECTION
+  convection_res = convection_module(
+    un = u,
+    nx = nx,
+    volume = volume)
+  
+  u = convection_res
+  
+  um_conv[:, idn] = u
+  
+  um[:, idn] = u
   
   
   meteo_pgdl[0, idn] = heating_res['air_temp']
@@ -2140,6 +2141,8 @@ def run_thermalmodel_hybrid(
   secview,
   std_scale,
   mean_scale,
+  std_input,
+  mean_input,
   scaler,
   test_input,
   ice=False,
@@ -2440,7 +2443,7 @@ def run_thermalmodel_hybrid(
     # print(day_of_year_list[int(n/dt) + timeoffset])
     # print(time_of_day_list[int(n/dt) + timeoffset])
 
-
+    # breakpoint()
     input_data_raw = {'depth':[i for i in range(1,51)],
                              'Area_m2':np.ones(50) * np.nanmax(area),
                              'Uw':np.ones(50) * Uw(n),
@@ -2456,7 +2459,20 @@ def run_thermalmodel_hybrid(
     
 
     input_mcl = pd.DataFrame(input_data_raw)
-
+    
+    # input_data = np.array(input_mcl)
+    # input_data[:,0] = (input_data[:,0] - mean_input[0]) / std_input[0] 
+    # input_data[:,1] = (input_data[:,1] - mean_input[1]) / std_input[1] 
+    # input_data[:,2] = (input_data[:,2] - mean_input[2]) / std_input[2] 
+    # input_data[:,3] = (input_data[:,3] - mean_input[3]) / std_input[3] 
+    # input_data[:,4] = (input_data[:,4] - mean_input[4]) / std_input[4] 
+    # input_data[:,5] = (input_data[:,5] - mean_input[5]) / std_input[5] 
+    # input_data[:,6] = (input_data[:,6] - mean_input[6]) / std_input[6] 
+    # input_data[:,7] = (input_data[:,7] - mean_input[7]) / std_input[7] 
+    # input_data[:,8] = (input_data[:,8] - mean_input[8]) / std_input[8] 
+    # input_data[:,9] = (input_data[:,9] - mean_input[9]) / std_input[9] 
+    # input_data[:,10] = (input_data[:,10] - mean_input[10]) / std_input[10] 
+    
     input_data = scaler.transform(input_mcl)    
 
     input_data_tensor = torch.tensor(input_data, device = torch.device('cpu'))
