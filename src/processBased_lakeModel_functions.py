@@ -2328,6 +2328,7 @@ def run_thermalmodel_hybrid(
     time_ind = np.where(times == n)
 
     um_initial[:, idn] = u
+
     
     if 'kz' in locals():
         1+1
