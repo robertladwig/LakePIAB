@@ -2307,7 +2307,7 @@ def run_thermalmodel_hybrid(
   m0_PATH =  f"./../MCL/03_finetuning/saved_models/diffusion_model_finetuned.pth"
 
   
-  m0_layers = [11, 32, 32, 1]
+  m0_layers = [13, 32, 32, 1]
 
   diffusion_model = MLP(m0_layers, activation="gelu")
   m0_checkpoint = torch.load(m0_PATH, map_location=torch.device('cpu'))
@@ -2454,7 +2454,9 @@ def run_thermalmodel_hybrid(
                              'snow':np.ones(50) * Hs,
                              'snowice':np.ones(50) * Hsi,
                              'diffusivity':kz,
-                             'temp_heat01':u}
+                             'temp_initial00': um_initial[:, idn],
+                             'temp_heat01': um_heat[:, idn], 
+                             'temp_total05':u}
                              #'diffusivity':np.ones(25) * kzn}
     
 
@@ -2487,7 +2489,7 @@ def run_thermalmodel_hybrid(
 
     u = u[:,0]
 
-    
+ 
     um_diff[:, idn] = u
     kzm[:,idn] = kz
     
@@ -2495,12 +2497,12 @@ def run_thermalmodel_hybrid(
     um_mix[:, idn] = u
 
     ## (4) CONVECTION
-    # convection_res = convection_module(
-    #     un = u,
-    #     nx = nx,
-    #     volume = volume)
+    convection_res = convection_module(
+        un = u,
+        nx = nx,
+        volume = volume)
     
-    # u = convection_res['temp']
+    u = convection_res['temp']
     
     um_conv[:, idn] = u
     

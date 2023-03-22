@@ -11,8 +11,9 @@ import seaborn as sns
 from sklearn.preprocessing import StandardScaler
 import torch
 
-os.chdir("/home/robert/Projects/LakePIAB/src")
-#os.chdir("C:/Users/ladwi/Documents/Projects/R/LakePIAB/src")
+
+#os.chdir("/home/robert/Projects/LakePIAB/src")
+os.chdir("C:/Users/ladwi/Documents/Projects/R/LakePIAB/src")
 from processBased_lakeModel_functions import get_hypsography, provide_meteorology, initial_profile, run_thermalmodel, run_thermalmodel, heating_module, diffusion_module, mixing_module, convection_module, ice_module, run_thermalmodel_hybrid, run_thermalmodel_hybrid_v2
 
 ## get normalization variables from deep learning
@@ -27,7 +28,7 @@ data_df = data_df.drop(columns=['time'])
  #               'lightExtinct_m-1','Area_m2', 
   #               'day_of_year', 'time_of_day', 'ice', 'snow', 'snowice', 'temp_initial00']
 m0_input_columns = ['depth', 'Area_m2', 'Uw',
-                 'buoyancy', 'day_of_year', 'time_of_day',  'ice', 'snow', 'snowice','diffusivity', 'temp_total05']
+                 'buoyancy', 'day_of_year', 'time_of_day',  'ice', 'snow', 'snowice','diffusivity', 'temp_initial00', 'temp_heat01', 'temp_total05']
 m0_input_column_ix = [data_df.columns.get_loc(column) for column in m0_input_columns]
 
 data_df_scaler = data_df[data_df.columns[m0_input_column_ix]]
@@ -97,8 +98,8 @@ meteo_all = provide_meteorology(meteofile = '../input/Mendota_2002.csv',
                     windfactor = 1.0)
                      
 hydrodynamic_timestep = 24 * dt
-total_runtime =  4 * hydrodynamic_timestep/dt  #365 *1 # 14 * 365
-startTime =   (0 + 365*10) * hydrodynamic_timestep/dt #150 * 24 * 3600
+total_runtime =  365 * hydrodynamic_timestep/dt  #365 *1 # 14 * 365
+startTime =   (0 + 365*8) * hydrodynamic_timestep/dt #150 * 24 * 3600
 endTime =  (startTime + total_runtime) # * hydrodynamic_timestep/dt) - 1
 
 startingDate = meteo_all[0]['date'][startTime] #* hydrodynamic_timestep/dt]
