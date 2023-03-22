@@ -2373,6 +2373,7 @@ def run_thermalmodel_hybrid(
         Hs = Hs)
     
     u = heating_res['temp']
+    u_pb = heating_res['temp']
     IceSnowAttCoeff = heating_res['IceSnowAttCoeff']
     
     um_heat[:, idn] = u
@@ -2420,6 +2421,7 @@ def run_thermalmodel_hybrid(
     iceT = ice_res['icemovAvg']
     supercooled = ice_res['supercooled']
     rho_snow = ice_res['density_snow']
+    u_pb = ice_res['temp']
     
     um_ice[:, idn] = u
     
@@ -2461,32 +2463,11 @@ def run_thermalmodel_hybrid(
     
 
     input_mcl = pd.DataFrame(input_data_raw)
-    
-    # input_data = np.array(input_mcl)
-    # input_data[:,0] = (input_data[:,0] - mean_input[0]) / std_input[0] 
-    # input_data[:,1] = (input_data[:,1] - mean_input[1]) / std_input[1] 
-    # input_data[:,2] = (input_data[:,2] - mean_input[2]) / std_input[2] 
-    # input_data[:,3] = (input_data[:,3] - mean_input[3]) / std_input[3] 
-    # input_data[:,4] = (input_data[:,4] - mean_input[4]) / std_input[4] 
-    # input_data[:,5] = (input_data[:,5] - mean_input[5]) / std_input[5] 
-    # input_data[:,6] = (input_data[:,6] - mean_input[6]) / std_input[6] 
-    # input_data[:,7] = (input_data[:,7] - mean_input[7]) / std_input[7] 
-    # input_data[:,8] = (input_data[:,8] - mean_input[8]) / std_input[8] 
-    # input_data[:,9] = (input_data[:,9] - mean_input[9]) / std_input[9] 
-    # input_data[:,10] = (input_data[:,10] - mean_input[10]) / std_input[10] 
-    
     input_data = scaler.transform(input_mcl)    
-
     input_data_tensor = torch.tensor(input_data, device = torch.device('cpu'))
-    
-    
     output_tensor = diffusion_model(input_data_tensor.float())
-    
-    
     output_array = output_tensor.detach().cpu().numpy()
-    
     u = output_array * std_scale + mean_scale
-
     u = u[:,0]
 
  
@@ -2507,6 +2488,30 @@ def run_thermalmodel_hybrid(
     um_conv[:, idn] = u
     
     um[:, idn] = u
+    
+    
+    diffusion_res = diffusion_module(
+        un = u_pb,
+        kzn = kz,
+        Uw = Uw(n),
+        depth= depth,
+        dx = dx,
+        area = area,
+        dt = dt,
+        nx = nx,
+        ice = ice, 
+        diffusion_method = diffusion_method,
+        scheme = scheme)
+    
+    u_pb = diffusion_res['temp']
+    convection_res = convection_module(
+        un = u_pb,
+        nx = nx,
+        volume = volume)
+    
+    u_pb = convection_res['temp']
+    
+    u = u_pb
     
     meteo_pgdl[0, idn] = heating_res['air_temp']
     meteo_pgdl[1, idn] = heating_res['longwave_flux']

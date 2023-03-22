@@ -45,12 +45,14 @@ meteo_all = provide_meteorology(meteofile = '../input/Mendota_2002.csv',
 # nTotalSteps = int(total_runtime * hydrodynamic_timestep/ dt)
 
 hydrodynamic_timestep = 24 * dt
-total_runtime =  (365*4) * hydrodynamic_timestep/dt  #365 *1 # 14 * 365
-startTime =   (0 + 365*10) * hydrodynamic_timestep/dt #150 * 24 * 3600
-endTime =  (startTime + total_runtime)  # * hydrodynamic_timestep/dt) - 1
+total_runtime =  365 * hydrodynamic_timestep/dt  #365 *1 # 14 * 365
+startTime =   (0 + 365*13) * hydrodynamic_timestep/dt #150 * 24 * 3600
+endTime =  (startTime + total_runtime) # * hydrodynamic_timestep/dt) - 1
 
 startingDate = meteo_all[0]['date'][startTime] #* hydrodynamic_timestep/dt]
-endingDate = meteo_all[0]['date'][(endTime-1)]#
+endingDate = meteo_all[0]['date'][(endTime - 1)]#[(startTime + total_runtime)]# * hydrodynamic_timestep/dt -1]
+# endingDate = meteo_all[0]['date'][(startTime + total_runtime * hydrodynamic_timestep/dt) - 1]
+
 
 #26280
 times = pd.date_range(startingDate, endingDate, freq='H')
@@ -258,13 +260,26 @@ ax = df_20m_observed.plot(x='datetime', y=['wtemp'], color="black", style = '.')
 df_20m_simulated.plot(x='datetime', y=['wtemp'], color="blue", ax = ax)
 plt.show()
 
-
+# heatmap of temps  
+N_pts = 6
+fig, ax = plt.subplots(figsize=(10,8))
+sns.heatmap(temp, cmap=plt.cm.get_cmap('Spectral_r'),  xticklabels=1000, yticklabels=2, vmin = 0, vmax = 35)
+ax.set_ylabel("Depth", fontsize=15)
+ax.set_xlabel("Time", fontsize=15)    
+ax.collections[0].colorbar.set_label("Hybrid Temperature")
+xticks_ix = np.array(ax.get_xticks()).astype(int)
+time_label = times[xticks_ix]
+nelement = len(times)//N_pts
+time_label = time_label[::nelement]
+ax.xaxis.set_major_locator(plt.MaxNLocator(N_pts))
+ax.set_xticklabels(time_label, rotation=0)
+plt.show()
 
 dt = pd.read_csv('../input/observed_df_lter_hourly_wide.csv', index_col=0)
 dt=dt.rename(columns = {'DateTime':'time'})
 dt['time'] = pd.to_datetime(dt['time'], format='%Y-%m-%d %H')
 dt_red = dt[dt['time'] >= startingDate]
-dt_red = dt_red[dt_red['time'] < endingDate]
+dt_red = dt_red[dt_red['time'] <= endingDate]
 dt_notime = dt_red.drop(dt_red.columns[[0]], axis = 1)
 dt_notime = dt_notime.transpose()
 dt_obs = dt_notime.to_numpy()
@@ -278,3 +293,6 @@ n_obs = int(number_days*training_frac)
 rmse = sqrt(sum(sum((temp - dt_obs)**2)) / (temp.shape[0] * temp.shape[1]))
 train = sqrt(sum(sum((temp[:,0:n_obs] - dt_obs[:,0:n_obs])**2)) / (temp.shape[0] * n_obs))
 test = sqrt(sum(sum((temp[:,(n_obs+1):temp.shape[1]] - dt_obs[:,(n_obs+1):temp.shape[1]])**2)) / (temp.shape[0] * (temp.shape[1] - n_obs)))
+
+sqrt(sum((temp[0,:] - dt_obs[0,:])**2) / (len(temp[0,:])))
+sqrt(sum((temp[49,:] - dt_obs[49,:])**2) / (len(temp[49,:])))

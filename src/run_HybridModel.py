@@ -12,8 +12,8 @@ from sklearn.preprocessing import StandardScaler
 import torch
 
 
-#os.chdir("/home/robert/Projects/LakePIAB/src")
-os.chdir("C:/Users/ladwi/Documents/Projects/R/LakePIAB/src")
+os.chdir("/home/robert/Projects/LakePIAB/src")
+#os.chdir("C:/Users/ladwi/Documents/Projects/R/LakePIAB/src")
 from processBased_lakeModel_functions import get_hypsography, provide_meteorology, initial_profile, run_thermalmodel, run_thermalmodel, heating_module, diffusion_module, mixing_module, convection_module, ice_module, run_thermalmodel_hybrid, run_thermalmodel_hybrid_v2
 
 ## get normalization variables from deep learning
@@ -99,7 +99,7 @@ meteo_all = provide_meteorology(meteofile = '../input/Mendota_2002.csv',
                      
 hydrodynamic_timestep = 24 * dt
 total_runtime =  365 * hydrodynamic_timestep/dt  #365 *1 # 14 * 365
-startTime =   (0 + 365*8) * hydrodynamic_timestep/dt #150 * 24 * 3600
+startTime =   (0 + 365*13) * hydrodynamic_timestep/dt #150 * 24 * 3600
 endTime =  (startTime + total_runtime) # * hydrodynamic_timestep/dt) - 1
 
 startingDate = meteo_all[0]['date'][startTime] #* hydrodynamic_timestep/dt]
