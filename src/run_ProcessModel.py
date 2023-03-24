@@ -266,7 +266,7 @@ df = pd.concat([df1, df2, df3, df4], axis = 1)
 df.to_csv('../output/py_icesnow.csv', index=None)
 
 # observed data
-dt = pd.read_csv('../input/observed_df_lter_hourly_wide.csv', index_col=0)
+dt = pd.read_csv('../input/observed_df_lter_hourly_wide_clean.csv', index_col=0)
 dt=dt.rename(columns = {'DateTime':'time'})
 dt['time'] = pd.to_datetime(dt['time'], format='%Y-%m-%d %H')
 dt_red = dt[dt['time'] >= startingDate]

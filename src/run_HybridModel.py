@@ -12,8 +12,8 @@ from sklearn.preprocessing import StandardScaler
 import torch
 
 
-os.chdir("/home/robert/Projects/LakePIAB/src")
-#os.chdir("C:/Users/ladwi/Documents/Projects/R/LakePIAB/src")
+#os.chdir("/home/robert/Projects/LakePIAB/src")
+os.chdir("C:/Users/ladwi/Documents/Projects/R/LakePIAB/src")
 from processBased_lakeModel_functions import get_hypsography, provide_meteorology, initial_profile, run_thermalmodel, run_thermalmodel, heating_module, diffusion_module, mixing_module, convection_module, ice_module, run_thermalmodel_hybrid, run_thermalmodel_hybrid_v2
 
 ## get normalization variables from deep learning
@@ -98,8 +98,8 @@ meteo_all = provide_meteorology(meteofile = '../input/Mendota_2002.csv',
                     windfactor = 1.0)
                      
 hydrodynamic_timestep = 24 * dt
-total_runtime =  365 * hydrodynamic_timestep/dt  #365 *1 # 14 * 365
-startTime =   (0 + 365*13) * hydrodynamic_timestep/dt #150 * 24 * 3600
+total_runtime =  (10 * 365) * hydrodynamic_timestep/dt  #365 *1 # 14 * 365
+startTime =   (0 + 365*0) * hydrodynamic_timestep/dt #150 * 24 * 3600
 endTime =  (startTime + total_runtime) # * hydrodynamic_timestep/dt) - 1
 
 startingDate = meteo_all[0]['date'][startTime] #* hydrodynamic_timestep/dt]
@@ -241,7 +241,7 @@ ax.xaxis.set_major_locator(plt.MaxNLocator(N_pts))
 ax.set_xticklabels(time_label, rotation=0)
 plt.show()
 
-dt = pd.read_csv('../input/observed_df_lter_hourly_wide.csv', index_col=0)
+dt = pd.read_csv('../input/observed_df_lter_hourly_wide_clean.csv', index_col=0)
 dt=dt.rename(columns = {'DateTime':'time'})
 dt['time'] = pd.to_datetime(dt['time'], format='%Y-%m-%d %H')
 dt_red = dt[dt['time'] >= startingDate]
@@ -252,16 +252,28 @@ dt_obs = dt_notime.to_numpy()
 dt_obs.shape
 temp.shape
 
+# number_days =temp.shape[1]
+# training_frac = 0.6
+# n_obs = int(number_days*training_frac)
+
+# rmse = sqrt(sum(sum((temp - dt_obs)**2)) / (temp.shape[0] * temp.shape[1]))
+# train = sqrt(sum(sum((temp[:,0:n_obs] - dt_obs[:,0:n_obs])**2)) / (temp.shape[0] * n_obs))
+# test = sqrt(sum(sum((temp[:,(n_obs+1):temp.shape[1]] - dt_obs[:,(n_obs+1):temp.shape[1]])**2)) / (temp.shape[0] * (temp.shape[1] - n_obs)))
+
+# sqrt(sum((temp[0,:] - dt_obs[0,:])**2) / (len(temp[0,:])))
+# sqrt(sum((temp[49,:] - dt_obs[49,:])**2) / (len(temp[49,:])))
+
 number_days =temp.shape[1]
 training_frac = 0.6
-n_obs = int(number_days*training_frac)
+n_obs = int(50 * number_days*training_frac)
 
-rmse = sqrt(sum(sum((temp - dt_obs)**2)) / (temp.shape[0] * temp.shape[1]))
-train = sqrt(sum(sum((temp[:,0:n_obs] - dt_obs[:,0:n_obs])**2)) / (temp.shape[0] * n_obs))
-test = sqrt(sum(sum((temp[:,(n_obs+1):temp.shape[1]] - dt_obs[:,(n_obs+1):temp.shape[1]])**2)) / (temp.shape[0] * (temp.shape[1] - n_obs)))
+perf_obs = dt_obs[dt_obs != -999]
+perfs_sim = temp[dt_obs != -999]
 
-sqrt(sum((temp[0,:] - dt_obs[0,:])**2) / (len(temp[0,:])))
-sqrt(sum((temp[49,:] - dt_obs[49,:])**2) / (len(temp[49,:])))
+rmse = sqrt((sum((perfs_sim - perf_obs)**2)) / (len(perf_obs)))
+train = sqrt((sum((perfs_sim[0:n_obs] - perf_obs[0:n_obs])**2)) / (n_obs))
+test = sqrt((sum((perfs_sim[(n_obs+1):len(perfs_sim)] - perf_obs[(n_obs+1):len(perf_obs)])**2)) / ((len(perf_obs)- n_obs)))
+
 
 # heatmap of temps  
 fig, ax = plt.subplots(figsize=(10,8))
