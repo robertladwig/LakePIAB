@@ -12,8 +12,8 @@ from sklearn.preprocessing import StandardScaler
 import torch
 
 
-#os.chdir("/home/robert/Projects/LakePIAB/src")
-os.chdir("C:/Users/ladwi/Documents/Projects/R/LakePIAB/src")
+os.chdir("/home/robert/Projects/LakePIAB/src")
+#os.chdir("C:/Users/ladwi/Documents/Projects/R/LakePIAB/src")
 from processBased_lakeModel_functions import get_hypsography, provide_meteorology, initial_profile, run_thermalmodel, run_thermalmodel, heating_module, diffusion_module, mixing_module, convection_module, ice_module, run_thermalmodel_hybrid, run_thermalmodel_hybrid_v2, run_thermalmodel_deep
 
 ## get normalization variables from deep learning
@@ -152,7 +152,7 @@ res = run_thermalmodel_deep(
     scheme='implicit',
     km = 4 * 10**(-6), 
     weight_kz = 0.5,
-    kd_light = 0.8,
+    kd_light = 0.4,
     denThresh=1e-2,
     albedo = 0.1,
     eps=0.97,

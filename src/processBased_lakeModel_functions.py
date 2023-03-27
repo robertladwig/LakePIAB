@@ -2958,14 +2958,14 @@ def run_thermalmodel_deep(
     # print(time_of_day_list[int(n/dt) + timeoffset])
     
 
-    # breakpoint()
+    #breakpoint()
     input_data_raw = {'depth':[i for i in range(1,51)],
                       'AirTemp_degC': np.ones(50) *  heating_res['air_temp'],
                       'Longwave_Wm-2': np.ones(50) *  heating_res['longwave_flux'],
                       'Latent_Wm-2': np.ones(50) *  heating_res['latent_flux'],
                       'Sensible_Wm-2': np.ones(50) *  heating_res['sensible_flux'],
                       'Shortwave_Wm-2': np.ones(50) *  heating_res['shortwave_flux'],
-                      'lightExtinct_m-1': np.ones(50) *  heating_res['shortwave_flux'],
+                      'lightExtinct_m-1': np.ones(50) *  heating_res['light'],
                              'Area_m2':np.ones(50) * np.nanmax(area),
                              'Uw':np.ones(50) * Uw(n),
                              'day_of_year':np.ones(50) * int(day_of_year(n)),
