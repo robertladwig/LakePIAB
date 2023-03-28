@@ -2779,7 +2779,7 @@ def run_thermalmodel_deep(
   m0_PATH =  f"./../MCL/03_finetuning/saved_models/directdeep_model_finetuned.pth"
 
   
-  m0_layers = [20, 32, 32,32,32,32,32,32,32,32,32, 1]
+  m0_layers = [8, 32, 32,32,32,32,32,32,32,32,32, 1] # 20
 
   diffusion_model = MLP(m0_layers, activation="gelu")
   m0_checkpoint = torch.load(m0_PATH, map_location=torch.device('cpu'))
@@ -2861,39 +2861,39 @@ def run_thermalmodel_deep(
     iceT_prior = iceT
     
     ## (5) ICE AND SNOW
-    ice_res = ice_module(
-        un = u,
-        dt = dt,
-        dx = dx,
-        area = area,
-        Tair = Tair(n),
-        CC = CC(n),
-        ea = ea(n),
-        Jsw = Jsw(n),
-        Jlw = Jlw(n),
-        Uw = Uw(n),
-        Pa= Pa(n),
-        RH = RH(n),
-        PP = PP(n),
-        IceSnowAttCoeff = IceSnowAttCoeff,
-        ice = ice,
-        dt_iceon_avg = dt_iceon_avg,
-        iceT = iceT,
-        supercooled = supercooled,
-        rho_snow = rho_snow,
-        Hi = Hi,
-        Hsi = Hsi,
-        Hs = Hs)
+    # ice_res = ice_module(
+    #     un = u,
+    #     dt = dt,
+    #     dx = dx,
+    #     area = area,
+    #     Tair = Tair(n),
+    #     CC = CC(n),
+    #     ea = ea(n),
+    #     Jsw = Jsw(n),
+    #     Jlw = Jlw(n),
+    #     Uw = Uw(n),
+    #     Pa= Pa(n),
+    #     RH = RH(n),
+    #     PP = PP(n),
+    #     IceSnowAttCoeff = IceSnowAttCoeff,
+    #     ice = ice,
+    #     dt_iceon_avg = dt_iceon_avg,
+    #     iceT = iceT,
+    #     supercooled = supercooled,
+    #     rho_snow = rho_snow,
+    #     Hi = Hi,
+    #     Hsi = Hsi,
+    #     Hs = Hs)
     
-    u = ice_res['temp']
-    Hi = ice_res['icethickness']
-    Hs = ice_res['snowthickness']
-    Hsi = ice_res['snowicethickness']
-    ice = ice_res['iceFlag']
-    iceT = ice_res['icemovAvg']
-    supercooled = ice_res['supercooled']
-    rho_snow = ice_res['density_snow']
-    u_pb = ice_res['temp']
+    # u = ice_res['temp']
+    # Hi = ice_res['icethickness']
+    # Hs = ice_res['snowthickness']
+    # Hsi = ice_res['snowicethickness']
+    # ice = ice_res['iceFlag']
+    # iceT = ice_res['icemovAvg']
+    # supercooled = ice_res['supercooled']
+    # rho_snow = ice_res['density_snow']
+    # u_pb = ice_res['temp']
     
     um_ice[:, idn] = u
     
@@ -2901,36 +2901,36 @@ def run_thermalmodel_deep(
     Hsm[0,idn] = Hs
     Hsim[0,idn] = Hsi
     
-    diffusion_res = diffusion_module(
-        un = u_pb,
-        kzn = kz,
-        Uw = Uw(n),
-        depth= depth,
-        dx = dx,
-        area = area,
-        dt = dt,
-        nx = nx,
-        ice = ice, 
-        diffusion_method = diffusion_method,
-        scheme = scheme)
+    # diffusion_res = diffusion_module(
+    #     un = u_pb,
+    #     kzn = kz,
+    #     Uw = Uw(n),
+    #     depth= depth,
+    #     dx = dx,
+    #     area = area,
+    #     dt = dt,
+    #     nx = nx,
+    #     ice = ice, 
+    #     diffusion_method = diffusion_method,
+    #     scheme = scheme)
     
     um_diff[:, idn] = u
     kzm[:,idn] = kz
-    u_pb = diffusion_res['temp']
+    # u_pb = diffusion_res['temp']
     
     
     ## (3) MIXING    
     um_mix[:, idn] = u
 
     ## (4) CONVECTION
-    convection_res = convection_module(
-        un = u_pb,
-        nx = nx,
-        volume = volume)
+    # convection_res = convection_module(
+    #     un = u_pb,
+    #     nx = nx,
+    #     volume = volume)
     
-    u_pb = convection_res['temp']
+    # u_pb = convection_res['temp']
     
-    u = convection_res['temp']
+    # u = convection_res['temp']
     
     um_conv[:, idn] = u
     
@@ -2940,7 +2940,7 @@ def run_thermalmodel_deep(
 
     
 
-    print(u)
+
     ## (2) DIFFUSION
     date_time = daily_meteo.date
     day_of_year_list = daily_meteo.day_of_year_list
@@ -2961,24 +2961,22 @@ def run_thermalmodel_deep(
     #breakpoint()
     input_data_raw = {'depth':[i for i in range(1,51)],
                       'AirTemp_degC': np.ones(50) *  heating_res['air_temp'],
-                      'Longwave_Wm-2': np.ones(50) *  heating_res['longwave_flux'],
-                      'Latent_Wm-2': np.ones(50) *  heating_res['latent_flux'],
-                      'Sensible_Wm-2': np.ones(50) *  heating_res['sensible_flux'],
+                    #  'Longwave_Wm-2': np.ones(50) *  heating_res['longwave_flux'],
                       'Shortwave_Wm-2': np.ones(50) *  heating_res['shortwave_flux'],
                       'lightExtinct_m-1': np.ones(50) *  heating_res['light'],
                              'Area_m2':np.ones(50) * np.nanmax(area),
                              'Uw':np.ones(50) * Uw(n),
                              'day_of_year':np.ones(50) * int(day_of_year(n)),
-                             'time_of_day':np.ones(50) * int(time_of_day(n)),
-                             'buoyancy':buoy,
-                             'diffusivity':kz,
-                             'temp_initial00': um_initial[:, idn],
-                             'temp_heat01': um_heat[:, idn], 
-                             'temp_diff02': um_diff[:, idn] ,
-                             'temp_total05':u,
-                             'ice':np.ones(50) * Hi,
-                             'snow':np.ones(50) * Hs,
-                             'snowice':np.ones(50) * Hsi}
+                             'time_of_day':np.ones(50) * int(time_of_day(n))}
+                            # 'buoyancy':buoy,
+                            # 'diffusivity':kz,
+                            # 'temp_initial00': um_initial[:, idn],
+                            # 'temp_heat01': um_heat[:, idn], 
+                            # 'temp_diff02': um_diff[:, idn] ,
+                            # 'temp_total05':u,
+                            # 'ice':np.ones(50) * Hi,
+                            # 'snow':np.ones(50) * Hs,
+                            # 'snowice':np.ones(50) * Hsi}
                              #'diffusivity':np.ones(25) * kzn}
     
 
@@ -2991,13 +2989,13 @@ def run_thermalmodel_deep(
     u = u[:,0]
     
     
-    print(u)
+ 
     um[:, idn] = u
     
     
 
     
-    u = u_pb
+    #u = u_pb
     
     meteo_pgdl[0, idn] = heating_res['air_temp']
     meteo_pgdl[1, idn] = heating_res['longwave_flux']

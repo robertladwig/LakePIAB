@@ -12,8 +12,8 @@ from sklearn.preprocessing import StandardScaler
 import torch
 
 
-os.chdir("/home/robert/Projects/LakePIAB/src")
-#os.chdir("C:/Users/ladwi/Documents/Projects/R/LakePIAB/src")
+#os.chdir("/home/robert/Projects/LakePIAB/src")
+os.chdir("C:/Users/ladwi/Documents/Projects/R/LakePIAB/src")
 from processBased_lakeModel_functions import get_hypsography, provide_meteorology, initial_profile, run_thermalmodel, run_thermalmodel, heating_module, diffusion_module, mixing_module, convection_module, ice_module, run_thermalmodel_hybrid, run_thermalmodel_hybrid_v2, run_thermalmodel_deep
 
 ## get normalization variables from deep learning
@@ -27,12 +27,12 @@ data_df = data_df.drop(columns=['time'])
 #m0_input_columns = ['depth', 'AirTemp_degC', 'Longwave_Wm-2', 'Latent_Wm-2', 'Sensible_Wm-2', 'Shortwave_Wm-2',
  #               'lightExtinct_m-1','Area_m2', 
   #               'day_of_year', 'time_of_day', 'ice', 'snow', 'snowice', 'temp_initial00']
-m0_input_columns = ['depth', 'AirTemp_degC', 'Longwave_Wm-2', 'Latent_Wm-2', 'Sensible_Wm-2', 'Shortwave_Wm-2',
+m0_input_columns = ['depth', 'AirTemp_degC',  'Shortwave_Wm-2',
                 'lightExtinct_m-1','Area_m2', 'Uw',
-                 'day_of_year', 'time_of_day',  
-                 'buoyancy', 'diffusivity', 'temp_initial00', 
-                'temp_heat01', 'temp_diff02', 'temp_total05',
-                'ice', 'snow', 'snowice']
+                 'day_of_year', 'time_of_day']#,  
+          #       'buoyancy', 'diffusivity', 'temp_initial00', 
+            #    'temp_heat01', 'temp_diff02', 'temp_total05',
+              #  'ice', 'snow', 'snowice']
 m0_input_column_ix = [data_df.columns.get_loc(column) for column in m0_input_columns]
 
 data_df_scaler = data_df[data_df.columns[m0_input_column_ix]]
@@ -150,10 +150,10 @@ res = run_thermalmodel_deep(
     supercooled = 0,#    
     diffusion_method = 'hendersonSellers',# 'hendersonSellers', 'munkAnderson' 'hondzoStefan'
     scheme='implicit',
-    km = 4 * 10**(-6), 
+    km = 1.4 * 10**(-7),#4 * 10**(-6), 
     weight_kz = 0.5,
     kd_light = 0.4,
-    denThresh=1e-2,
+    denThresh=1e-3,
     albedo = 0.1,
     eps=0.97,
     emissivity=0.97,
