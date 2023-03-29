@@ -224,11 +224,12 @@ cbp2 <- c("lightgreen",
                  "#0072B2", "#D55E00", "#CC79A7")
 cbp2 <- brewer.pal(n = 4, name = "Set1")
 
-brewer.pal(n = 4, name = 'Set1')
-cbp2 <- c( "#377EB8" "#4DAF4A", 'black' "#984EA3")
+brewer.pal(n = 8, name = 'Set1')
+display.brewer.pal(n = 8, name = 'Set1')
+cbp2 <- c( "#377EB8" ,"#4DAF4A", 'black', "#FF7F00")
 
 linesize = 0.7
-alphasize =0.85
+alphasize =0.95
 
 pb_df <- pb_df %>%
   mutate(month = month(time),
@@ -248,7 +249,7 @@ Surftemp_timeSeries <- ggplot() +
   geom_line(data = dl_df, aes(time, SurfaceWTR, col = 'DL'), linewidth = linesize, alpha = alphasize) +
   geom_line(data = pb_df, aes(time, SurfaceWTR, col = 'PB'), linewidth = linesize, alpha = alphasize) +
 
-  geom_line(data = obs_df, aes(time, SurfaceWTR, col = 'Obs'), linewidth = linesize, alpha = alphasize) +
+  geom_line(data = obs_df, aes(time, SurfaceWTR, col = 'Obs'), linewidth = 1.5, alpha = alphasize, linetype = 'dotted') +
 
   geom_line(data = hy_df, aes(time, SurfaceWTR, col = 'Hybrid'), linewidth = linesize, alpha = alphasize) +
 
@@ -263,7 +264,7 @@ Bottomtemp_timeSeries <- ggplot() +
   geom_line(data = dl_df, aes(time, BottomWTR, col = 'DL'), linewidth = linesize, alpha = alphasize) +
   geom_line(data = pb_df, aes(time, BottomWTR, col = 'PB'), linewidth = linesize, alpha = alphasize) +
 
-  geom_line(data = obs_df, aes(time, BottomWTR, col = 'Obs'), linewidth = linesize, alpha = alphasize) +
+  geom_line(data = obs_df, aes(time, BottomWTR, col = 'Obs'),  linewidth = 1.5, alpha = alphasize, linetype = 'dotted') +
 
   geom_line(data = hy_df, aes(time, BottomWTR, col = 'Hybrid'), linewidth = linesize, alpha = alphasize) +
 
@@ -276,7 +277,7 @@ Schmidt_timeSeries <- ggplot() +
   geom_line(data = dl_df, aes(time, SchmidtStability, col = 'DL'), linewidth = linesize, alpha = alphasize) +
   geom_line(data = dl_df, aes(time, SchmidtStability, col = 'DL'), linewidth = linesize, alpha = alphasize) +
   geom_line(data = pb_df, aes(time, SchmidtStability, col = 'PB'), linewidth = linesize, alpha = alphasize) +
-  geom_line(data = obs_df, aes(time, SchmidtStability, col = 'Obs'), linewidth = linesize, alpha = alphasize) +
+  geom_line(data = obs_df, aes(time, SchmidtStability, col = 'Obs'),  linewidth = 1.5, alpha = alphasize, linetype = 'dotted') +
   geom_line(data = hy_df, aes(time, SchmidtStability, col = 'Hybrid'), linewidth = linesize, alpha = alphasize) +
 
   xlab('') + ylab("Schmidt Stability (J m-2)") +
@@ -287,7 +288,7 @@ N2_timeSeries <- ggplot() +
   geom_line(data = dl_df, aes(time, N2, col = 'DL'), linewidth = linesize, alpha = alphasize) +
   geom_line(data = dl_df, aes(time, N2, col = 'DL'), linewidth = linesize, alpha = alphasize) +
   geom_line(data = pb_df, aes(time, N2, col = 'PB'), linewidth = linesize, alpha = alphasize) +
-  geom_line(data = obs_df, aes(time, N2, col = 'Obs'), linewidth = linesize, alpha = alphasize) +
+  geom_line(data = obs_df, aes(time, N2, col = 'Obs'),  linewidth = 1.5, alpha = alphasize, linetype = 'dotted') +
   geom_line(data = hy_df, aes(time, N2, col = 'Hybrid'), linewidth = linesize, alpha = alphasize) +
 
   xlab('') + ylab("Max. buoyancy frequency (s-2)") + ylim(0,0.03)+
@@ -297,7 +298,7 @@ N2_timeSeries <- ggplot() +
 LN_timeSeries <- ggplot() +
   geom_line(data = dl_df, aes(time, LakeNumber, col = 'DL'), linewidth = linesize, alpha = alphasize)+
   geom_line(data = pb_df, aes(time, LakeNumber, col = 'PB'), linewidth = linesize, alpha = alphasize)+
-  geom_line(data = obs_df, aes(time, LakeNumber, col = 'Obs'), linewidth = linesize, alpha = alphasize)+
+  geom_line(data = obs_df, aes(time, LakeNumber, col = 'Obs'),  linewidth = 1.5, alpha = alphasize, linetype = 'dotted')+
   geom_line(data = hy_df, aes(time, LakeNumber, col = 'Hybrid'), linewidth = linesize, alpha = alphasize)+
 
   xlab('') + ylab("Lake Number (-)") +
@@ -311,7 +312,7 @@ volumes_timeSeries <- ggplot() +
   geom_line(data = subset(pb_df, month >= 5 & month <= 9 & year == 2018), aes(time, thermoclineDepth, col = 'PB'), linewidth = linesize, alpha = alphasize) +
   # geom_line(data = obs_df, aes(time, EpiDepth, col = 'Obs upper metalimnion depth')) +
   # geom_line(data = obs_df, aes(time, HypoDepth, col = 'Obs lower metalimnion depth')) +
-  geom_line(data = subset(obs_df, month >= 5 & month <= 9& year == 2018), aes(time, thermoclineDepth, col = 'Obs'), linewidth = linesize, alpha = alphasize) +
+  geom_line(data = subset(obs_df, month >= 5 & month <= 9& year == 2018), aes(time, thermoclineDepth, col = 'Obs'), linewidth = 1.5, alpha = alphasize, linetype = 'dotted') +
   # geom_line(data = hy_df, aes(time, EpiDepth, col = 'Hybrid upper metalimnion depth')) +
   # geom_line(data = hy_df, aes(time, HypoDepth, col = 'Hybrid lower metalimnion depth')) +
   geom_line(data = subset(hy_df, month >= 5 & month <= 9& year == 2018), aes(time, thermoclineDepth, col = 'Hybrid'), linewidth = linesize, alpha = alphasize) +
@@ -330,7 +331,7 @@ Metavolumes_timeSeries <- ggplot() +
   geom_line(data = subset(pb_df, month >= 5 & month <= 9 & year == 2018), aes(time, HypoDepth, col = 'PB'), linewidth = linesize, alpha = alphasize) +
   # geom_line(data = obs_df, aes(time, EpiDepth, col = 'Obs upper metalimnion depth')) +
   # geom_line(data = obs_df, aes(time, HypoDepth, col = 'Obs lower metalimnion depth')) +
-  geom_line(data = subset(obs_df, month >= 5 & month <= 9 & year == 2018), aes(time, HypoDepth, col = 'Obs'), linewidth = linesize, alpha = alphasize) +
+  geom_line(data = subset(obs_df, month >= 5 & month <= 9 & year == 2018), aes(time, HypoDepth, col = 'Obs'), linewidth = 1.5, alpha = alphasize, linetype = 'dotted') +
   # geom_line(data = hy_df, aes(time, EpiDepth, col = 'Hybrid upper metalimnion depth')) +
   # geom_line(data = hy_df, aes(time, HypoDepth, col = 'Hybrid lower metalimnion depth')) +
   geom_line(data = subset(hy_df, month >= 5 & month <= 9 & year == 2018), aes(time, HypoDepth, col = 'Hybrid'), linewidth = linesize, alpha = alphasize) +
@@ -348,7 +349,7 @@ isotherms_timeSeries <- ggplot() +
   geom_line(data = subset(pb_df, month >= 5 & month <= 9 & year == 2018), aes(time, Iso15, col = 'PB'), linewidth = linesize, alpha = alphasize) +
   # geom_line(data = obs_df, aes(time, EpiDepth, col = 'Obs upper metalimnion depth')) +
   # geom_line(data = obs_df, aes(time, HypoDepth, col = 'Obs lower metalimnion depth')) +
-  geom_line(data = subset(obs_df, month >= 5 & month <= 9 & year == 2018), aes(time, Iso15, col = 'Obs'), linewidth = linesize, alpha = alphasize) +
+  geom_line(data = subset(obs_df, month >= 5 & month <= 9 & year == 2018), aes(time, Iso15, col = 'Obs'), linewidth = 1.5, alpha = alphasize, linetype = 'dotted') +
   # geom_line(data = hy_df, aes(time, EpiDepth, col = 'Hybrid upper metalimnion depth')) +
   # geom_line(data = hy_df, aes(time, HypoDepth, col = 'Hybrid lower metalimnion depth')) +
   geom_line(data = subset(hy_df, month >= 5 & month <= 9 & year == 2018), aes(time, Iso15, col = 'Hybrid'), linewidth = linesize, alpha = alphasize) +
@@ -356,7 +357,7 @@ isotherms_timeSeries <- ggplot() +
   # geom_line(data = dl_df, aes(time, HypoDepth, col = 'DL lower metalimnion depth')) +
   geom_line(data = subset(dl_df, month >= 5 & month <= 9 & year == 2018), aes(time, Iso15, col = 'DL'), linewidth = linesize, alpha = alphasize) + # thermocline depth
   scale_y_reverse() +
-  xlab('') + ylab("15 deg C isotherm (m") +
+  xlab('') + ylab("15 deg C isotherm (m)") +
   scale_colour_manual(values=cbp2) +
   theme_bw()
 
@@ -367,7 +368,7 @@ volumes_timeSeries2 <- ggplot() +
   geom_line(data = subset(pb_df, month >= 5 & month <= 9 & year == 2019), aes(time, thermoclineDepth, col = 'PB'), linewidth = linesize, alpha = alphasize) +
   # geom_line(data = obs_df, aes(time, EpiDepth, col = 'Obs upper metalimnion depth')) +
   # geom_line(data = obs_df, aes(time, HypoDepth, col = 'Obs lower metalimnion depth')) +
-  geom_line(data = subset(obs_df, month >= 5 & month <= 9& year == 2019), aes(time, thermoclineDepth, col = 'Obs'), linewidth = linesize, alpha = alphasize) +
+  geom_line(data = subset(obs_df, month >= 5 & month <= 9& year == 2019), aes(time, thermoclineDepth, col = 'Obs'),  linewidth = 1.5, alpha = alphasize, linetype = 'dotted') +
   # geom_line(data = hy_df, aes(time, EpiDepth, col = 'Hybrid upper metalimnion depth')) +
   # geom_line(data = hy_df, aes(time, HypoDepth, col = 'Hybrid lower metalimnion depth')) +
   geom_line(data = subset(hy_df, month >= 5 & month <= 9& year == 2019), aes(time, thermoclineDepth, col = 'Hybrid'), linewidth = linesize, alpha = alphasize) +
@@ -386,7 +387,7 @@ Metavolumes_timeSeries2 <- ggplot() +
   geom_line(data = subset(pb_df, month >= 5 & month <= 9 & year == 2019), aes(time, HypoDepth, col = 'PB'), linewidth = linesize, alpha = alphasize) +
   # geom_line(data = obs_df, aes(time, EpiDepth, col = 'Obs upper metalimnion depth')) +
   # geom_line(data = obs_df, aes(time, HypoDepth, col = 'Obs lower metalimnion depth')) +
-  geom_line(data = subset(obs_df, month >= 5 & month <= 9 & year == 2019), aes(time, HypoDepth, col = 'Obs'), linewidth = linesize, alpha = alphasize) +
+  geom_line(data = subset(obs_df, month >= 5 & month <= 9 & year == 2019), aes(time, HypoDepth, col = 'Obs'), linewidth = 1.5, alpha = alphasize, linetype = 'dotted') +
   # geom_line(data = hy_df, aes(time, EpiDepth, col = 'Hybrid upper metalimnion depth')) +
   # geom_line(data = hy_df, aes(time, HypoDepth, col = 'Hybrid lower metalimnion depth')) +
   geom_line(data = subset(hy_df, month >= 5 & month <= 9 & year == 2019), aes(time, HypoDepth, col = 'Hybrid'), linewidth = linesize, alpha = alphasize) +
@@ -404,7 +405,7 @@ isotherms_timeSeries2 <- ggplot() +
   geom_line(data = subset(pb_df, month >= 5 & month <= 9 & year == 2019), aes(time, Iso15, col = 'PB'), linewidth = linesize, alpha = alphasize) +
   # geom_line(data = obs_df, aes(time, EpiDepth, col = 'Obs upper metalimnion depth')) +
   # geom_line(data = obs_df, aes(time, HypoDepth, col = 'Obs lower metalimnion depth')) +
-  geom_line(data = subset(obs_df, month >= 5 & month <= 9 & year == 2019), aes(time, Iso15, col = 'Obs'), linewidth = linesize, alpha = alphasize) +
+  geom_line(data = subset(obs_df, month >= 5 & month <= 9 & year == 2019), aes(time, Iso15, col = 'Obs'),  linewidth = 1.5, alpha = alphasize, linetype = 'dotted') +
   # geom_line(data = hy_df, aes(time, EpiDepth, col = 'Hybrid upper metalimnion depth')) +
   # geom_line(data = hy_df, aes(time, HypoDepth, col = 'Hybrid lower metalimnion depth')) +
   geom_line(data = subset(hy_df, month >= 5 & month <= 9 & year == 2019), aes(time, Iso15, col = 'Hybrid'), linewidth = linesize, alpha = alphasize) +
@@ -418,7 +419,7 @@ isotherms_timeSeries2 <- ggplot() +
 
 LN_timeSeries2 <- ggplot() +
   geom_line(data = subset(pb_df, month >= 5 & month <= 9 & year == 2019), aes(time, LakeNumber, col = 'PB'), linewidth = linesize, alpha = alphasize) +
-  geom_line(data = subset(obs_df, month >= 5 & month <= 9 & year == 2019), aes(time, LakeNumber, col = 'Obs'), linewidth = linesize, alpha = alphasize) +
+  geom_line(data = subset(obs_df, month >= 5 & month <= 9 & year == 2019), aes(time, LakeNumber, col = 'Obs'), linewidth = 1.5, alpha = alphasize, linetype = 'dotted') +
   geom_line(data = subset(hy_df, month >= 5 & month <= 9 & year == 2019), aes(time, LakeNumber, col = 'Hybrid'), linewidth = linesize, alpha = alphasize) +
   geom_line(data = subset(dl_df, month >= 5 & month <= 9 & year == 2019), aes(time, LakeNumber, col = 'DL'), linewidth = linesize, alpha = alphasize) + # thermocline depth
   scale_y_reverse() +
@@ -427,8 +428,8 @@ LN_timeSeries2 <- ggplot() +
   scale_colour_manual(values=cbp2) +
   theme_bw()
 
-p1 <- ((Surftemp_timeSeries / Bottomtemp_timeSeries) |( Schmidt_timeSeries /N2_timeSeries))  + plot_layout(guides = 'collect') & theme_minimal() &theme(legend.position = 'bottom')
-ggsave(plot = p1, filename = "figs/Fig3.png", dpi = 300, width = 15, height =9, units = 'in')
+p1 <- ((Surftemp_timeSeries / Bottomtemp_timeSeries /Schmidt_timeSeries /N2_timeSeries))  + plot_layout(guides = 'collect') & theme_minimal() &theme(legend.position = 'bottom')
+ggsave(plot = p1, filename = "figs/Fig3.png", dpi = 300, width = 15, height =14, units = 'in')
   
 p2 <-  ((volumes_timeSeries/  Metavolumes_timeSeries/
  isotherms_timeSeries ) | (volumes_timeSeries2/  Metavolumes_timeSeries2/
