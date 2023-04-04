@@ -230,6 +230,14 @@ calc_nse(dl_df$Iso13, obs_df$Iso13)
 calc_nse(dl_df$Iso15, obs_df$Iso15)
 calc_nse(dl_df$Iso17, obs_df$Iso17)
 
+
+calc_rmse(pb_df$N2, obs_df$N2)
+calc_nse(pb_df$N2, obs_df$N2)
+calc_rmse(hy_df$N2, obs_df$N2)
+calc_nse(hy_df$N2, obs_df$N2)
+calc_rmse(dl_df$N2, obs_df$N2)
+calc_nse(dl_df$N2, obs_df$N2)
+
 # The palette with black:
 cbp2 <- c("lightgreen",
                  "#0072B2", "#D55E00", "#CC79A7")
@@ -278,7 +286,7 @@ Density_timeSeries_Hybrid_DL <- ggplot() +
 Density_timeSeries_Hybrid <- ggplot() +
   geom_line(data = hy_df, aes(time, EpiDense/MetaDense), linewidth = linesize, alpha = alphasize) +
   # geom_line(data = hy_df, aes(time, MetaDense/HypoDense), linewidth = linesize, alpha = alphasize, linetype = 'dashed') +
-  xlab('') + ylab("Epilimnion by metalimnion density (-)") +
+  xlab('') +  ylab(expression(atop("Epilimnion by", paste(" metalimnion density (-)")))) +
   scale_colour_manual(values=c('black', 'blue')) +
   ggtitle('Hybrid framework') +
   ylim(0.998, 1.0001) +
@@ -288,9 +296,8 @@ Density_timeSeries_Hybrid <- ggplot() +
 Density_timeSeries_Hybrid_DL <- ggplot() +
   geom_line(data = dl_df, aes(time, EpiDense/MetaDense), linewidth = linesize, alpha = alphasize) +
   # geom_line(data = dl_df, aes(time, MetaDense/HypoDense), linewidth = linesize, alpha = alphasize, linetype = 'dashed') +
-  xlab('') + ylab(paste("Epilimnion by",\n," metalimnion density (-)")) +
-  ylab(expression(atop("Eplimnion by", 
-                       "Metalimnion density (-)")))
+  xlab('') +# ylab(paste("Epilimnion by",\n," metalimnion density (-)")) +
+  ylab(expression(atop("Epilimnion by", paste(" metalimnion density (-)")))) +
   scale_colour_manual(values=c('black', 'blue')) +
   ggtitle('Deep learning model') +
   ylim(0.998, 1.0001) +
@@ -336,7 +343,7 @@ N2_timeSeries <- ggplot() +
   geom_line(data = pb_df, aes(time, N2, col = 'PB'), linewidth = linesize, alpha = alphasize) +
   geom_line(data = obs_df, aes(time, N2, col = 'Obs'),  linewidth = 1.5, alpha = alphasize, linetype = 'dotdash') +
   geom_line(data = hy_df, aes(time, N2, col = 'Hybrid'), linewidth = linesize, alpha = alphasize) +
-  labs(y = expression(paste("Max. bouyancy frequency (",s^-2,")")), x = "") + + ylim(0,0.03)+
+  labs(y = expression(paste("Max. bouyancy frequency (",s^-2,")")), x = "") + ylim(0,0.03)+
   scale_colour_manual(values=cbp2) +
   theme_bw() +
   theme(legend.title = element_blank()) 
