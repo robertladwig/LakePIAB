@@ -1,5 +1,5 @@
-# setwd("C:/Users/ladwi/Documents/Projects/R/LakePIAB")
-setwd("/Users/robertladwig/Documents/DSI/LakePIAB")
+setwd("C:/Users/ladwi/Documents/Projects/R/LakePIAB")
+# setwd("/Users/robertladwig/Documents/DSI/LakePIAB")
 library(tidyverse)
 library(rLakeAnalyzer)
 library(patchwork)
@@ -278,7 +278,7 @@ Density_timeSeries_Hybrid_DL <- ggplot() +
 Density_timeSeries_Hybrid <- ggplot() +
   geom_line(data = hy_df, aes(time, EpiDense/MetaDense), linewidth = linesize, alpha = alphasize) +
   # geom_line(data = hy_df, aes(time, MetaDense/HypoDense), linewidth = linesize, alpha = alphasize, linetype = 'dashed') +
-  xlab('') + ylab("Epilimnion density by metalimnion density (-)") +
+  xlab('') + ylab("Epilimnion by metalimnion density (-)") +
   scale_colour_manual(values=c('black', 'blue')) +
   ggtitle('Hybrid framework') +
   ylim(0.998, 1.0001) +
@@ -288,7 +288,9 @@ Density_timeSeries_Hybrid <- ggplot() +
 Density_timeSeries_Hybrid_DL <- ggplot() +
   geom_line(data = dl_df, aes(time, EpiDense/MetaDense), linewidth = linesize, alpha = alphasize) +
   # geom_line(data = dl_df, aes(time, MetaDense/HypoDense), linewidth = linesize, alpha = alphasize, linetype = 'dashed') +
-  xlab('') + ylab("Epilimnion density by metalimnion density (-)") +
+  xlab('') + ylab(paste("Epilimnion by",\n," metalimnion density (-)")) +
+  ylab(expression(atop("Eplimnion by", 
+                       "Metalimnion density (-)")))
   scale_colour_manual(values=c('black', 'blue')) +
   ggtitle('Deep learning model') +
   ylim(0.998, 1.0001) +
@@ -296,14 +298,14 @@ Density_timeSeries_Hybrid_DL <- ggplot() +
   theme(legend.title = element_blank()) 
 
 p3 <- Density_timeSeries_Hybrid / Density_timeSeries_Hybrid_DL & plot_layout(guides = 'collect') &theme(legend.position = 'bottom')
-ggsave(plot = p3, filename = "figs/Fig5.png", dpi = 300, width = 9, height =8, units = 'in')
+ggsave(plot = p3, filename = "figs/Fig5.png", dpi = 300, width = 9, height =5, units = 'in')
 
 Surftemp_timeSeries <- ggplot() +
   geom_line(data = dl_df, aes(time, SurfaceWTR, col = 'DL'), linewidth = linesize, alpha = alphasize) +
   geom_line(data = pb_df, aes(time, SurfaceWTR, col = 'PB'), linewidth = linesize, alpha = alphasize) +
   geom_line(data = obs_df, aes(time, SurfaceWTR, col = 'Obs'), linewidth = 1.5, alpha = alphasize, linetype = 'dotdash') +
   geom_line(data = hy_df, aes(time, SurfaceWTR, col = 'Hybrid'), linewidth = linesize, alpha = alphasize) +
-  xlab('') + ylab("Surface Water temperature (deg C)") +
+  xlab('') + ylab("Surface Water temperature (\u00B0C)") +
   scale_colour_manual(values=cbp2) +
   theme_bw() +
   theme(legend.title = element_blank()) 
@@ -313,7 +315,7 @@ Bottomtemp_timeSeries <- ggplot() +
   geom_line(data = pb_df, aes(time, BottomWTR, col = 'PB'), linewidth = linesize, alpha = alphasize) +
   geom_line(data = obs_df, aes(time, BottomWTR, col = 'Obs'),  linewidth = 1.5, alpha = alphasize, linetype = 'dotdash') +
   geom_line(data = hy_df, aes(time, BottomWTR, col = 'Hybrid'), linewidth = linesize, alpha = alphasize) +
-  xlab('') + ylab("Bottom Water temperature (deg C)") +
+  xlab('') + ylab("Bottom Water temperature (\u00B0C)") +
   scale_colour_manual(values=cbp2) +
   theme_bw() +
   theme(legend.title = element_blank()) 
@@ -323,7 +325,8 @@ Schmidt_timeSeries <- ggplot() +
   geom_line(data = pb_df, aes(time, SchmidtStability, col = 'PB'), linewidth = linesize, alpha = alphasize) +
   geom_line(data = obs_df, aes(time, SchmidtStability, col = 'Obs'),  linewidth = 1.5, alpha = alphasize, linetype = 'dotdash') +
   geom_line(data = hy_df, aes(time, SchmidtStability, col = 'Hybrid'), linewidth = linesize, alpha = alphasize) +
-  xlab('') + ylab("Schmidt Stability (J m-2)") +
+  # xlab('') + ylab("Schmidt Stability (J m-2)") + ylab(bquote('Y-axis '(number^2)))
+  labs(y = expression(paste("Schmidt stability (J ",m^-2,")")), x = "") +
   scale_colour_manual(values=cbp2) +
   theme_bw() +
   theme(legend.title = element_blank()) 
@@ -333,7 +336,7 @@ N2_timeSeries <- ggplot() +
   geom_line(data = pb_df, aes(time, N2, col = 'PB'), linewidth = linesize, alpha = alphasize) +
   geom_line(data = obs_df, aes(time, N2, col = 'Obs'),  linewidth = 1.5, alpha = alphasize, linetype = 'dotdash') +
   geom_line(data = hy_df, aes(time, N2, col = 'Hybrid'), linewidth = linesize, alpha = alphasize) +
-  xlab('') + ylab("Max. buoyancy frequency (s-2)") + ylim(0,0.03)+
+  labs(y = expression(paste("Max. bouyancy frequency (",s^-2,")")), x = "") + + ylim(0,0.03)+
   scale_colour_manual(values=cbp2) +
   theme_bw() +
   theme(legend.title = element_blank()) 
@@ -378,7 +381,7 @@ isotherms_timeSeries <- ggplot() +
   geom_line(data = subset(hy_df, month >= 5 & month <= 9 & year == 2018), aes(time, Iso15, col = 'Hybrid'), linewidth = linesize, alpha = alphasize) +
   geom_line(data = subset(dl_df, month >= 5 & month <= 9 & year == 2018), aes(time, Iso15, col = 'DL'), linewidth = linesize, alpha = alphasize) + # thermocline depth
   scale_y_reverse() +
-  xlab('') + ylab("15 deg C isotherm (m)") +
+  xlab('') + ylab("15 \u00B0C isotherm (m)") +
   scale_colour_manual(values=cbp2) +
   theme_bw() +
   theme(legend.title = element_blank()) 

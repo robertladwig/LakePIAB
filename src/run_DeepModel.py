@@ -232,18 +232,30 @@ plt.show()
 # heatmap of temps  
 N_pts = 6
 
-fig, ax = plt.subplots(figsize=(10,8))
+
+## function to calculate density from temperature
+def calc_dens(wtemp):
+    dens = (999.842594 + (6.793952 * 1e-2 * wtemp) - (9.095290 * 1e-3 *wtemp**2) +
+      (1.001685 * 1e-4 * wtemp**3) - (1.120083 * 1e-6* wtemp**4) + 
+      (6.536336 * 1e-9 * wtemp**5))
+    return dens
+
+fig, ax = plt.subplots(figsize=(20,10))
 sns.heatmap(temp, cmap=plt.cm.get_cmap('Spectral_r'),  xticklabels=1000, yticklabels=2, vmin = 0, vmax = 35)
+ax.contour(np.arange(.5, temp.shape[1]), np.arange(.5, temp.shape[0]), calc_dens(temp), levels=[998,999.5],
+           colors=['white', 'gray'],
+           linestyles = 'dotted')
 ax.set_ylabel("Depth", fontsize=15)
 ax.set_xlabel("Time", fontsize=15)    
-ax.collections[0].colorbar.set_label("Hybrid Temperature")
+ax.collections[0].colorbar.set_label("Water Temperature  ($^\circ$C)")
 xticks_ix = np.array(ax.get_xticks()).astype(int)
 time_label = times[xticks_ix]
 nelement = len(times)//N_pts
-time_label = time_label[::nelement]
+#time_label = time_label[::nelement]
 ax.xaxis.set_major_locator(plt.MaxNLocator(N_pts))
 ax.set_xticklabels(time_label, rotation=0)
 plt.show()
+
 
 dt = pd.read_csv('../input/observed_df_lter_hourly_wide_clean.csv', index_col=0)
 dt=dt.rename(columns = {'DateTime':'time'})
@@ -275,6 +287,7 @@ perf_obs = dt_obs[dt_obs != -999]
 perfs_sim = temp[dt_obs != -999]
 
 rmse = sqrt((sum((perfs_sim - perf_obs)**2)) / (len(perf_obs)))
+nse = 1 - ((sum((perf_obs - perfs_sim)**2)) / (sum((perf_obs - np.mean(perf_obs))**2)))
 train = sqrt((sum((perfs_sim[0:n_obs] - perf_obs[0:n_obs])**2)) / (n_obs))
 test = sqrt((sum((perfs_sim[(n_obs+1):len(perfs_sim)] - perf_obs[(n_obs+1):len(perf_obs)])**2)) / ((len(perf_obs)- n_obs)))
 
