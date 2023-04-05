@@ -134,6 +134,10 @@ dl_met <- read.csv("verification/dl_meteorology.csv")
 
 obs_raw <- read.csv("input/observed_df_lter_hourly_wide_clean.csv") 
 obs <- obs_raw[match(as.POSIXct(pb$time), as.POSIXct(obs_raw$DateTime)), ]
+
+dl_noMod <- read.csv("verification/dlnoM_temp.csv")
+dl_noMod_met <- read.csv("verification/dlnoM_meteorology.csv")
+
 # obs <- obs_raw %>%
 #   filter(DateTime >= min(as.POSIXct(pb$time)) & DateTime <= max(as.POSIXct(pb$time)))
 obs <- obs[,-1]
@@ -160,6 +164,12 @@ dl_df <- physicalCalc(input = dl,
                       area = area, 
                       depths = depths, 
                       meteo = dl_met, 
+                      hyps = hyps)
+
+dlnoM_df <- physicalCalc(input = dl_noMod, 
+                      area = area, 
+                      depths = depths, 
+                      meteo = dl_noMod_met, 
                       hyps = hyps)
 
 
@@ -196,6 +206,17 @@ calc_rmse(dl_df$Iso13, obs_df$Iso13)
 calc_rmse(dl_df$Iso15, obs_df$Iso15)
 calc_rmse(dl_df$Iso17, obs_df$Iso17)
 
+calc_rmse(dlnoM_df$SurfaceWTR, obs_df$SurfaceWTR)
+calc_rmse(dlnoM_df$BottomWTR, obs_df$BottomWTR)
+calc_rmse(dlnoM_df$SchmidtStability, obs_df$SchmidtStability)
+calc_rmse(dlnoM_df$LakeNumber, obs_df$LakeNumber)
+calc_rmse(dlnoM_df$thermoclineDepth, obs_df$thermoclineDepth)
+calc_rmse(dlnoM_df$EpiDepth, obs_df$EpiDepth)
+calc_rmse(dlnoM_df$HypoDepth, obs_df$HypoDepth)
+calc_rmse(dlnoM_df$Iso13, obs_df$Iso13)
+calc_rmse(dlnoM_df$Iso15, obs_df$Iso15)
+calc_rmse(dlnoM_df$Iso17, obs_df$Iso17)
+
 
 calc_nse(pb_df$SurfaceWTR, obs_df$SurfaceWTR)
 calc_nse(pb_df$BottomWTR, obs_df$BottomWTR)
@@ -230,6 +251,17 @@ calc_nse(dl_df$Iso13, obs_df$Iso13)
 calc_nse(dl_df$Iso15, obs_df$Iso15)
 calc_nse(dl_df$Iso17, obs_df$Iso17)
 
+calc_nse(dlnoM_df$SurfaceWTR, obs_df$SurfaceWTR)
+calc_nse(dlnoM_df$BottomWTR, obs_df$BottomWTR)
+calc_nse(dlnoM_df$SchmidtStability, obs_df$SchmidtStability)
+calc_nse(dlnoM_df$LakeNumber, obs_df$LakeNumber)
+calc_nse(dlnoM_df$thermoclineDepth, obs_df$thermoclineDepth)
+calc_nse(dlnoM_df$EpiDepth, obs_df$EpiDepth)
+calc_nse(dlnoM_df$HypoDepth, obs_df$HypoDepth)
+calc_nse(dlnoM_df$Iso13, obs_df$Iso13)
+calc_nse(dlnoM_df$Iso15, obs_df$Iso15)
+calc_nse(dlnoM_df$Iso17, obs_df$Iso17)
+
 
 calc_rmse(pb_df$N2, obs_df$N2)
 calc_nse(pb_df$N2, obs_df$N2)
@@ -237,15 +269,13 @@ calc_rmse(hy_df$N2, obs_df$N2)
 calc_nse(hy_df$N2, obs_df$N2)
 calc_rmse(dl_df$N2, obs_df$N2)
 calc_nse(dl_df$N2, obs_df$N2)
+calc_rmse(dlnoM_df$N2, obs_df$N2)
+calc_nse(dlnoM_df$N2, obs_df$N2)
 
 # The palette with black:
-cbp2 <- c("lightgreen",
-                 "#0072B2", "#D55E00", "#CC79A7")
-cbp2 <- brewer.pal(n = 4, name = "Set1")
-
-brewer.pal(n = 8, name = 'Set1')
-display.brewer.pal(n = 8, name = 'Set1')
-cbp2 <- c( "#377EB8" ,"#4DAF4A", 'black', "#FF7F00")
+brewer.pal(n = 8, name = 'Set2')
+display.brewer.pal(n = 8, name = 'Set2')
+cbp2 <- c("#66C2A5","#4DAF4A",  "#FF7F00",'black',  "#377EB8" )
 
 linesize = 0.7
 alphasize =0.95
@@ -260,6 +290,9 @@ dl_df <- dl_df %>%
   mutate(month = month(time),
          year = year(time))
 hy_df <- hy_df %>%
+  mutate(month = month(time),
+         year = year(time))
+dlnoM_df <- dlnoM_df %>%
   mutate(month = month(time),
          year = year(time))
 
@@ -299,16 +332,28 @@ Density_timeSeries_Hybrid_DL <- ggplot() +
   xlab('') +# ylab(paste("Epilimnion by",\n," metalimnion density (-)")) +
   ylab(expression(atop("Epilimnion by", paste(" metalimnion density (-)")))) +
   scale_colour_manual(values=c('black', 'blue')) +
-  ggtitle('Deep learning model') +
+  ggtitle('Deep learning model no process') +
   ylim(0.998, 1.0001) +
   theme_bw() +
   theme(legend.title = element_blank()) 
 
-p3 <- Density_timeSeries_Hybrid / Density_timeSeries_Hybrid_DL & plot_layout(guides = 'collect') &theme(legend.position = 'bottom')
+Density_timeSeries_Hybrid_DLnoM <- ggplot() +
+  geom_line(data = dlnoM_df, aes(time, EpiDense/MetaDense), linewidth = linesize, alpha = alphasize) +
+  # geom_line(data = dl_df, aes(time, MetaDense/HypoDense), linewidth = linesize, alpha = alphasize, linetype = 'dashed') +
+  xlab('') +# ylab(paste("Epilimnion by",\n," metalimnion density (-)")) +
+  ylab(expression(atop("Epilimnion by", paste(" metalimnion density (-)")))) +
+  scale_colour_manual(values=c('black', 'blue')) +
+  ggtitle('Deep learning model no module') +
+  ylim(0.998, 1.0001) +
+  theme_bw() +
+  theme(legend.title = element_blank()) 
+
+p3 <- Density_timeSeries_Hybrid / Density_timeSeries_Hybrid_DL / Density_timeSeries_Hybrid_DLnoM & plot_layout(guides = 'collect') &theme(legend.position = 'bottom')
 ggsave(plot = p3, filename = "figs/Fig5.png", dpi = 300, width = 9, height =5, units = 'in')
 
 Surftemp_timeSeries <- ggplot() +
-  geom_line(data = dl_df, aes(time, SurfaceWTR, col = 'DL'), linewidth = linesize, alpha = alphasize) +
+  geom_line(data = dl_df, aes(time, SurfaceWTR, col = 'DL no prcs'), linewidth = linesize, alpha = alphasize) +
+  geom_line(data = dlnoM_df, aes(time, SurfaceWTR, col = 'DL no mod'), linewidth = linesize, alpha = alphasize) +
   geom_line(data = pb_df, aes(time, SurfaceWTR, col = 'PB'), linewidth = linesize, alpha = alphasize) +
   geom_line(data = obs_df, aes(time, SurfaceWTR, col = 'Obs'), linewidth = 1.5, alpha = alphasize, linetype = 'dotdash') +
   geom_line(data = hy_df, aes(time, SurfaceWTR, col = 'Hybrid'), linewidth = linesize, alpha = alphasize) +
@@ -318,7 +363,8 @@ Surftemp_timeSeries <- ggplot() +
   theme(legend.title = element_blank()) 
 
 Bottomtemp_timeSeries <- ggplot() +
-  geom_line(data = dl_df, aes(time, BottomWTR, col = 'DL'), linewidth = linesize, alpha = alphasize) +
+  geom_line(data = dl_df, aes(time, BottomWTR, col = 'DL no prcs'), linewidth = linesize, alpha = alphasize) +
+  geom_line(data = dlnoM_df, aes(time, BottomWTR, col = 'DL no mod'), linewidth = linesize, alpha = alphasize) +
   geom_line(data = pb_df, aes(time, BottomWTR, col = 'PB'), linewidth = linesize, alpha = alphasize) +
   geom_line(data = obs_df, aes(time, BottomWTR, col = 'Obs'),  linewidth = 1.5, alpha = alphasize, linetype = 'dotdash') +
   geom_line(data = hy_df, aes(time, BottomWTR, col = 'Hybrid'), linewidth = linesize, alpha = alphasize) +
@@ -328,7 +374,8 @@ Bottomtemp_timeSeries <- ggplot() +
   theme(legend.title = element_blank()) 
 
 Schmidt_timeSeries <- ggplot() +
-  geom_line(data = dl_df, aes(time, SchmidtStability, col = 'DL'), linewidth = linesize, alpha = alphasize) +
+  geom_line(data = dl_df, aes(time, SchmidtStability, col = 'DL no prcs'), linewidth = linesize, alpha = alphasize) +
+  geom_line(data = dlnoM_df, aes(time, SchmidtStability, col = 'DL no mod'), linewidth = linesize, alpha = alphasize) +
   geom_line(data = pb_df, aes(time, SchmidtStability, col = 'PB'), linewidth = linesize, alpha = alphasize) +
   geom_line(data = obs_df, aes(time, SchmidtStability, col = 'Obs'),  linewidth = 1.5, alpha = alphasize, linetype = 'dotdash') +
   geom_line(data = hy_df, aes(time, SchmidtStability, col = 'Hybrid'), linewidth = linesize, alpha = alphasize) +
@@ -339,7 +386,8 @@ Schmidt_timeSeries <- ggplot() +
   theme(legend.title = element_blank()) 
 
 N2_timeSeries <- ggplot() +
-  geom_line(data = dl_df, aes(time, N2, col = 'DL'), linewidth = linesize, alpha = alphasize) +
+  geom_line(data = dl_df, aes(time, N2, col = 'DL no prcs'), linewidth = linesize, alpha = alphasize) +
+  geom_line(data = dlnoM_df, aes(time, N2, col = 'DL no mod'), linewidth = linesize, alpha = alphasize) +
   geom_line(data = pb_df, aes(time, N2, col = 'PB'), linewidth = linesize, alpha = alphasize) +
   geom_line(data = obs_df, aes(time, N2, col = 'Obs'),  linewidth = 1.5, alpha = alphasize, linetype = 'dotdash') +
   geom_line(data = hy_df, aes(time, N2, col = 'Hybrid'), linewidth = linesize, alpha = alphasize) +
@@ -360,10 +408,11 @@ LN_timeSeries <- ggplot() +
   theme(legend.title = element_blank()) 
 
 volumes_timeSeries <- ggplot() +
+  geom_line(data = subset(dl_df, month >= 5 & month <= 9& year == 2018), aes(time, thermoclineDepth, col = 'DL no prcs'), linewidth = linesize, alpha = alphasize) + # thermocline depth
+  geom_line(data = subset(dlnoM_df, month >= 5 & month <= 9& year == 2018), aes(time, thermoclineDepth, col = 'DL no mod'), linewidth = linesize, alpha = alphasize) + # thermocline depth
   geom_line(data = subset(pb_df, month >= 5 & month <= 9 & year == 2018), aes(time, thermoclineDepth, col = 'PB'), linewidth = linesize, alpha = alphasize) +
   geom_line(data = subset(obs_df, month >= 5 & month <= 9& year == 2018), aes(time, thermoclineDepth, col = 'Obs'), linewidth = 1.5, alpha = alphasize, linetype = 'dotdash') +
   geom_line(data = subset(hy_df, month >= 5 & month <= 9& year == 2018), aes(time, thermoclineDepth, col = 'Hybrid'), linewidth = linesize, alpha = alphasize) +
-  geom_line(data = subset(dl_df, month >= 5 & month <= 9& year == 2018), aes(time, thermoclineDepth, col = 'DL'), linewidth = linesize, alpha = alphasize) + # thermocline depth
   scale_y_reverse() +
   xlab('') + ylab("Thermocline depth (m)") +
   ggtitle("2018")+
@@ -372,10 +421,11 @@ volumes_timeSeries <- ggplot() +
   theme(legend.title = element_blank()) 
 
 Metavolumes_timeSeries <- ggplot() +
+  geom_line(data = subset(dl_df, month >= 5 & month <= 9 & year == 2018), aes(time, HypoDepth, col = 'DL no prcs'), linewidth = linesize, alpha = alphasize) + # thermocline depth
+  geom_line(data = subset(dlnoM_df, month >= 5 & month <= 9 & year == 2018), aes(time, HypoDepth, col = 'DL no mod'), linewidth = linesize, alpha = alphasize) + # thermocline depth
   geom_line(data = subset(pb_df, month >= 5 & month <= 9 & year == 2018), aes(time, HypoDepth, col = 'PB'), linewidth = linesize, alpha = alphasize) +
   geom_line(data = subset(obs_df, month >= 5 & month <= 9 & year == 2018), aes(time, HypoDepth, col = 'Obs'), linewidth = 1.5, alpha = alphasize, linetype = 'dotdash') +
   geom_line(data = subset(hy_df, month >= 5 & month <= 9 & year == 2018), aes(time, HypoDepth, col = 'Hybrid'), linewidth = linesize, alpha = alphasize) +
-  geom_line(data = subset(dl_df, month >= 5 & month <= 9 & year == 2018), aes(time, HypoDepth, col = 'DL'), linewidth = linesize, alpha = alphasize) + # thermocline depth
   scale_y_reverse() +
   xlab('') + ylab("Lower metalimnion depth (m)") +
   scale_colour_manual(values=cbp2) +
@@ -383,10 +433,12 @@ Metavolumes_timeSeries <- ggplot() +
   theme(legend.title = element_blank()) 
 
 isotherms_timeSeries <- ggplot() +
+  geom_line(data = subset(dl_df, month >= 5 & month <= 9 & year == 2018), aes(time, Iso15, col = 'DL no prcs'), linewidth = linesize, alpha = alphasize) + # thermocline depth
+  geom_line(data = subset(dlnoM_df, month >= 5 & month <= 9 & year == 2018), aes(time, Iso15, col = 'DL no mod'), linewidth = linesize, alpha = alphasize) + # thermocline depth
   geom_line(data = subset(pb_df, month >= 5 & month <= 9 & year == 2018), aes(time, Iso15, col = 'PB'), linewidth = linesize, alpha = alphasize) +
   geom_line(data = subset(obs_df, month >= 5 & month <= 9 & year == 2018), aes(time, Iso15, col = 'Obs'), linewidth = 1.5, alpha = alphasize, linetype = 'dotdash') +
   geom_line(data = subset(hy_df, month >= 5 & month <= 9 & year == 2018), aes(time, Iso15, col = 'Hybrid'), linewidth = linesize, alpha = alphasize) +
-  geom_line(data = subset(dl_df, month >= 5 & month <= 9 & year == 2018), aes(time, Iso15, col = 'DL'), linewidth = linesize, alpha = alphasize) + # thermocline depth
+  # geom_line(data = subset(dl_df, month >= 5 & month <= 9 & year == 2018), aes(time, Iso15, col = 'DL'), linewidth = linesize, alpha = alphasize) + # thermocline depth
   scale_y_reverse() +
   xlab('') + ylab("15 \u00B0C isotherm (m)") +
   scale_colour_manual(values=cbp2) +
@@ -395,10 +447,12 @@ isotherms_timeSeries <- ggplot() +
 
 
 volumes_timeSeries2 <- ggplot() +
+  geom_line(data = subset(dl_df, month >= 5 & month <= 9& year == 2019), aes(time, thermoclineDepth, col = 'DL no prcs'), linewidth = linesize, alpha = alphasize) + # thermocline depth
+  geom_line(data = subset(dlnoM_df, month >= 5 & month <= 9& year == 2019), aes(time, thermoclineDepth, col = 'DL no mod'), linewidth = linesize, alpha = alphasize) + # thermocline depth
   geom_line(data = subset(pb_df, month >= 5 & month <= 9 & year == 2019), aes(time, thermoclineDepth, col = 'PB'), linewidth = linesize, alpha = alphasize) +
   geom_line(data = subset(obs_df, month >= 5 & month <= 9& year == 2019), aes(time, thermoclineDepth, col = 'Obs'),  linewidth = 1.5, alpha = alphasize, linetype = 'dotdash') +
   geom_line(data = subset(hy_df, month >= 5 & month <= 9& year == 2019), aes(time, thermoclineDepth, col = 'Hybrid'), linewidth = linesize, alpha = alphasize) +
-  geom_line(data = subset(dl_df, month >= 5 & month <= 9& year == 2019), aes(time, thermoclineDepth, col = 'DL'), linewidth = linesize, alpha = alphasize) + # thermocline depth
+  # geom_line(data = subset(dl_df, month >= 5 & month <= 9& year == 2019), aes(time, thermoclineDepth, col = 'DL'), linewidth = linesize, alpha = alphasize) + # thermocline depth
   scale_y_reverse() +
   xlab('') + ylab("") +
   scale_colour_manual(values=cbp2) +
@@ -407,10 +461,11 @@ volumes_timeSeries2 <- ggplot() +
   theme(legend.title = element_blank()) 
 
 Metavolumes_timeSeries2 <- ggplot() +
+  geom_line(data = subset(dl_df, month >= 5 & month <= 9 & year == 2019), aes(time, HypoDepth, col = 'DL no prcs'), linewidth = linesize, alpha = alphasize) + # thermocline depth
+  geom_line(data = subset(dlnoM_df, month >= 5 & month <= 9 & year == 2019), aes(time, HypoDepth, col = 'DL no mod'), linewidth = linesize, alpha = alphasize) + # thermocline depth
   geom_line(data = subset(pb_df, month >= 5 & month <= 9 & year == 2019), aes(time, HypoDepth, col = 'PB'), linewidth = linesize, alpha = alphasize) +
   geom_line(data = subset(obs_df, month >= 5 & month <= 9 & year == 2019), aes(time, HypoDepth, col = 'Obs'), linewidth = 1.5, alpha = alphasize, linetype = 'dotdash') +
   geom_line(data = subset(hy_df, month >= 5 & month <= 9 & year == 2019), aes(time, HypoDepth, col = 'Hybrid'), linewidth = linesize, alpha = alphasize) +
-  geom_line(data = subset(dl_df, month >= 5 & month <= 9 & year == 2019), aes(time, HypoDepth, col = 'DL'), linewidth = linesize, alpha = alphasize) + # thermocline depth
   scale_y_reverse() +
   xlab('') + ylab("") +
   scale_colour_manual(values=cbp2) +
@@ -418,10 +473,11 @@ Metavolumes_timeSeries2 <- ggplot() +
   theme(legend.title = element_blank()) 
 
 isotherms_timeSeries2 <- ggplot() +
+  geom_line(data = subset(dl_df, month >= 5 & month <= 9 & year == 2019), aes(time, Iso15, col = 'DL no prcs'), linewidth = linesize, alpha = alphasize) + # thermocline depth
+  geom_line(data = subset(dlnoM_df, month >= 5 & month <= 9 & year == 2019), aes(time, Iso15, col = 'DL no mod'), linewidth = linesize, alpha = alphasize) + # thermocline depth
   geom_line(data = subset(pb_df, month >= 5 & month <= 9 & year == 2019), aes(time, Iso15, col = 'PB'), linewidth = linesize, alpha = alphasize) +
   geom_line(data = subset(obs_df, month >= 5 & month <= 9 & year == 2019), aes(time, Iso15, col = 'Obs'),  linewidth = 1.5, alpha = alphasize, linetype = 'dotdash') +
   geom_line(data = subset(hy_df, month >= 5 & month <= 9 & year == 2019), aes(time, Iso15, col = 'Hybrid'), linewidth = linesize, alpha = alphasize) +
-  geom_line(data = subset(dl_df, month >= 5 & month <= 9 & year == 2019), aes(time, Iso15, col = 'DL'), linewidth = linesize, alpha = alphasize) + # thermocline depth
   scale_y_reverse() +
   xlab('') + ylab("") +
   scale_colour_manual(values=cbp2) +
@@ -429,10 +485,11 @@ isotherms_timeSeries2 <- ggplot() +
   theme(legend.title = element_blank()) 
 
 LN_timeSeries2 <- ggplot() +
+  geom_line(data = subset(dl_df, month >= 5 & month <= 9 & year == 2019), aes(time, LakeNumber, col = 'DL no prcs'), linewidth = linesize, alpha = alphasize) + # thermocline depth
+  geom_line(data = subset(dlnoM_df, month >= 5 & month <= 9 & year == 2019), aes(time, LakeNumber, col = 'DL no mod'), linewidth = linesize, alpha = alphasize) + # thermocline depth
   geom_line(data = subset(pb_df, month >= 5 & month <= 9 & year == 2019), aes(time, LakeNumber, col = 'PB'), linewidth = linesize, alpha = alphasize) +
   geom_line(data = subset(obs_df, month >= 5 & month <= 9 & year == 2019), aes(time, LakeNumber, col = 'Obs'), linewidth = 1.5, alpha = alphasize, linetype = 'dotdash') +
   geom_line(data = subset(hy_df, month >= 5 & month <= 9 & year == 2019), aes(time, LakeNumber, col = 'Hybrid'), linewidth = linesize, alpha = alphasize) +
-  geom_line(data = subset(dl_df, month >= 5 & month <= 9 & year == 2019), aes(time, LakeNumber, col = 'DL'), linewidth = linesize, alpha = alphasize) + # thermocline depth
   scale_y_reverse() +
   ylim(0,10)+
   xlab('') + ylab("") +
