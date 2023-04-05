@@ -271,10 +271,10 @@ def calc_dens(wtemp):
       (6.536336 * 1e-9 * wtemp**5))
     return dens
 
-fig, ax = plt.subplots(figsize=(20,10))
+fig, ax = plt.subplots(figsize=(15,5))
 sns.heatmap(temp, cmap=plt.cm.get_cmap('Spectral_r'),  xticklabels=1000, yticklabels=2, vmin = 0, vmax = 35)
-ax.contour(np.arange(.5, temp.shape[1]), np.arange(.5, temp.shape[0]), calc_dens(temp), levels=[998,999.5],
-           colors=['white', 'gray'],
+ax.contour(np.arange(.5, temp.shape[1]), np.arange(.5, temp.shape[0]), calc_dens(temp), levels=[999],
+           colors=['black', 'gray'],
            linestyles = 'dotted')
 ax.set_ylabel("Depth", fontsize=15)
 ax.set_xlabel("Time", fontsize=15)    
@@ -321,10 +321,10 @@ test = sqrt((sum((perfs_sim[(n_obs+1):len(perfs_sim)] - perf_obs[(n_obs+1):len(p
 # sqrt(sum((temp[0,:] - dt_obs[0,:])**2) / (len(temp[0,:])))
 # sqrt(sum((temp[49,:] - dt_obs[49,:])**2) / (len(temp[49,:])))
 
-fig, ax = plt.subplots(figsize=(20,10))
+fig, ax = plt.subplots(figsize=(15,5))
 sns.heatmap(dt_obs, cmap=plt.cm.get_cmap('Spectral_r'),  xticklabels=1000, yticklabels=2, vmin = 0, vmax = 35)
-ax.contour(np.arange(.5, temp.shape[1]), np.arange(.5, temp.shape[0]), calc_dens(dt_obs), levels=[998,999.5],
-           colors=['white', 'gray'],
+ax.contour(np.arange(.5, temp.shape[1]), np.arange(.5, temp.shape[0]), calc_dens(temp), levels=[999],
+           colors=['black', 'gray'],
            linestyles = 'dotted')
 ax.set_ylabel("Depth", fontsize=15)
 ax.set_xlabel("Time", fontsize=15)    

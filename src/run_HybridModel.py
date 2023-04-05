@@ -235,10 +235,10 @@ def calc_dens(wtemp):
       (6.536336 * 1e-9 * wtemp**5))
     return dens
 
-fig, ax = plt.subplots(figsize=(20,10))
+fig, ax = plt.subplots(figsize=(15,5))
 sns.heatmap(temp, cmap=plt.cm.get_cmap('Spectral_r'),  xticklabels=1000, yticklabels=2, vmin = 0, vmax = 35)
-ax.contour(np.arange(.5, temp.shape[1]), np.arange(.5, temp.shape[0]), calc_dens(temp), levels=[998,999.5],
-           colors=['white', 'gray'],
+ax.contour(np.arange(.5, temp.shape[1]), np.arange(.5, temp.shape[0]), calc_dens(temp), levels=[999],
+           colors=['black', 'gray'],
            linestyles = 'dotted')
 ax.set_ylabel("Depth", fontsize=15)
 ax.set_xlabel("Time", fontsize=15)    
@@ -250,6 +250,7 @@ nelement = len(times)//N_pts
 ax.xaxis.set_major_locator(plt.MaxNLocator(N_pts))
 ax.set_xticklabels(time_label, rotation=0)
 plt.show()
+#plt.savefig('../figs/verif_heatmap_hybrid.png')
 
 dt = pd.read_csv('../input/observed_df_lter_hourly_wide_clean.csv', index_col=0)
 dt=dt.rename(columns = {'DateTime':'time'})
