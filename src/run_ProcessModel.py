@@ -9,8 +9,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 
-# os.chdir("/home/robert/Projects/LakePIAB/src")
-os.chdir("C:/Users/ladwi/Documents/Projects/R/LakePIAB/src")
+os.chdir("/home/robert/Projects/LakePIAB/src")
+# os.chdir("C:/Users/ladwi/Documents/Projects/R/LakePIAB/src")
 # from oneD_HeatMixing_Functions import get_hypsography, provide_meteorology, initial_profile, run_thermalmodel_v1, run_hybridmodel_heating, run_hybridmodel_mixing, run_thermalmodel_v2
 from processBased_lakeModel_functions import get_hypsography, provide_meteorology, initial_profile, run_thermalmodel, run_thermalmodel, run_thermalmodel_test, heating_module, diffusion_module, mixing_module, convection_module, ice_module
 
@@ -244,6 +244,7 @@ df2.columns = ["AirTemp_degC", "Longwave_Wm-2",
                   'snowice_prior', 'rho_snow_prior', 'IceSnowAttCoeff_prior', 'iceFlag_prior',
                   'dt_iceon_avg_prior', 'icemovAvg_prior']
 df = pd.concat([df1, df2], axis = 1)
+df_airtemp = df['AirTemp_degC']
 df.to_csv('../output/py_meteorology_input.csv', index=None)
 
     
@@ -271,6 +272,15 @@ dt=dt.rename(columns = {'DateTime':'time'})
 dt['time'] = pd.to_datetime(dt['time'], format='%Y-%m-%d %H')
 dt_red = dt[dt['time'] >= startingDate]
 dt_red = dt_red[dt_red['time'] <= endingDate]
+
+# let's set surface to 0 if airtemp is below 0, assuming we have ice
+temp_flag = df_airtemp <= 0
+wtr_0m = np.array(dt_red['var.0'])
+wtr_05m = np.array(dt_red['var.0.5'])
+wtr_0m[temp_flag] = 0
+wtr_05m[temp_flag] = 0
+dt_red['var.0'] = wtr_0m
+dt_red['var.0.5'] = wtr_05m 
 dt_red.to_csv('../output/py_observed_temp.csv', index=None, na_rep='-999')
 
              
