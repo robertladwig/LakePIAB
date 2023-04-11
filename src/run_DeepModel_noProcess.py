@@ -169,6 +169,7 @@ res = run_thermalmodel_deep(
     KEice=0,
     Ice_min=0.1,
     pgdl_mode = 'on',
+    pgdl_model = '03_finetuning',
     rho_snow = 250)
 
 

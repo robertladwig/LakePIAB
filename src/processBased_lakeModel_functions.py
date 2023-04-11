@@ -2171,6 +2171,7 @@ def run_thermalmodel_hybrid(
   KEice=1/1000,
   Ice_min=0.1,
   pgdl_mode='on',
+  pgdl_model = '03_finetuning',
   Hs = 0,
   rho_snow = 250,
   Hsi = 0,
@@ -2304,7 +2305,7 @@ def run_thermalmodel_hybrid(
     def __len__(self):
         return len(self.X)
   
-  m0_PATH =  f"./../MCL/03_finetuning/saved_models/diffusion_model_finetuned.pth"
+  m0_PATH =  f"./../MCL/" + pgdl_model + "/saved_models/diffusion_model_finetuned.pth"
 
   
   m0_layers = [13, 32, 32, 1]
@@ -2643,6 +2644,7 @@ def run_thermalmodel_deep(
   KEice=1/1000,
   Ice_min=0.1,
   pgdl_mode='on',
+  pgdl_model = '03_finetuning',
   Hs = 0,
   rho_snow = 250,
   Hsi = 0,
@@ -2776,7 +2778,7 @@ def run_thermalmodel_deep(
     def __len__(self):
         return len(self.X)
   
-  m0_PATH =  f"./../MCL/03_finetuning/saved_models/directdeep_model_finetuned.pth"
+  m0_PATH =  f"./../MCL/" + pgdl_model + "/saved_models/directdeep_model_finetuned.pth"
 
   
   m0_layers = [8, 32, 32,32,32,32,32,32,32,32,32, 1] # 20
@@ -3126,6 +3128,7 @@ def run_thermalmodel_deep_noModule(
   KEice=1/1000,
   Ice_min=0.1,
   pgdl_mode='on',
+  pgdl_model = '03_finetuning',
   Hs = 0,
   rho_snow = 250,
   Hsi = 0,
@@ -3259,7 +3262,7 @@ def run_thermalmodel_deep_noModule(
     def __len__(self):
         return len(self.X)
   
-  m0_PATH =  f"./../MCL/03_finetuning/saved_models/directdeep_model_PB_finetuned.pth"
+  m0_PATH =  f"./../MCL/" + pgdl_model + "/saved_models/directdeep_model_PB_finetuned.pth"
 
   
   m0_layers = [9, 32, 32,32,32,32,32,32,32,32,32, 1] # 20

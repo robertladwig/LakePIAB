@@ -357,7 +357,8 @@ Surftemp_timeSeries <- ggplot() +
   geom_line(data = pb_df, aes(time, SurfaceWTR, col = 'PB'), linewidth = linesize, alpha = alphasize) +
   geom_line(data = obs_df, aes(time, SurfaceWTR, col = 'Obs'), linewidth = 1.5, alpha = alphasize, linetype = 'dotdash') +
   geom_line(data = hy_df, aes(time, SurfaceWTR, col = 'Hybrid'), linewidth = linesize, alpha = alphasize) +
-  xlab('') + ylab("Surface Water temperature (\u00B0C)") +
+  xlab('') + #ylab("Surface Water temperature (\u00B0C)") +
+  ylab(expression(atop("Surface Water", paste(" temperature (\u00B0C)")))) +
   scale_colour_manual(values=cbp2) +
   theme_bw() +
   theme(legend.title = element_blank()) 
@@ -368,10 +369,12 @@ Bottomtemp_timeSeries <- ggplot() +
   geom_line(data = pb_df, aes(time, BottomWTR, col = 'PB'), linewidth = linesize, alpha = alphasize) +
   geom_line(data = obs_df, aes(time, BottomWTR, col = 'Obs'),  linewidth = 1.5, alpha = alphasize, linetype = 'dotdash') +
   geom_line(data = hy_df, aes(time, BottomWTR, col = 'Hybrid'), linewidth = linesize, alpha = alphasize) +
-  xlab('') + ylab("Bottom Water temperature (\u00B0C)") +
+  xlab('') +# ylab("Bottom Water temperature (\u00B0C)") +
+  ylab(expression(atop("Bottom Water", paste(" temperature (\u00B0C)")))) +
   scale_colour_manual(values=cbp2) +
   theme_bw() +
   theme(legend.title = element_blank()) 
+
 
 Schmidt_timeSeries <- ggplot() +
   geom_line(data = dl_df, aes(time, SchmidtStability, col = 'DL no prcs'), linewidth = linesize, alpha = alphasize) +
@@ -494,6 +497,7 @@ LN_timeSeries2 <- ggplot() +
   ylim(0,10)+
   xlab('') + ylab("") +
   scale_colour_manual(values=cbp2) +
+  
   theme_bw() +
   theme(legend.title = element_blank()) 
 
@@ -504,4 +508,60 @@ p2 <-  ((volumes_timeSeries/  Metavolumes_timeSeries/
  isotherms_timeSeries ) | (volumes_timeSeries2/  Metavolumes_timeSeries2/
                              isotherms_timeSeries2 ))+ plot_layout(guides = 'collect')& theme(legend.position = 'bottom')
 ggsave(plot = p2, filename = "figs/Fig4.png", dpi = 300, width = 15, height = 9, units = 'in')
+
+p3 <- p1 / p2 + plot_layout(widths = c(2,2,2,2,2), heights = unit(c(4,4,4,4, 14), c('cm', 'cm', "cm", "cm", "cm")))
+ggsave(plot = p3, filename = "figs/combined_Fig3+4.png", dpi = 300, width = 10, height = 16, units = 'in')
+
+
+
+stn_hy <- hy_df %>%
+  mutate(doy = yday(time)) %>%
+  mutate(week = lubridate::isoweek(time)) %>%
+  group_by(year, month) %>%
+  select(time, SurfaceWTR, BottomWTR, SchmidtStability) %>%
+  summarise_all(list(mean, sd))
+
+stn_dl <- dl_df %>%
+  mutate(doy = yday(time)) %>%
+  mutate(week = lubridate::isoweek(time)) %>%
+  group_by(year, month) %>%
+  select(time,SurfaceWTR, BottomWTR, SchmidtStability) %>%
+  summarise_all(list(mean, sd))
+
+stn_dlnoM <- dlnoM_df %>%
+  mutate(doy = yday(time)) %>%
+  mutate(week = lubridate::isoweek(time)) %>%
+  group_by(year, month) %>%
+  select(time,SurfaceWTR, BottomWTR, SchmidtStability) %>%
+  summarise_all(list(mean, sd))
+
+g1 <- ggplot() +
+  geom_line(data = stn_hy, aes(time_fn1            , SurfaceWTR_fn1 / SurfaceWTR_fn2, col = 'Hybrid')) +
+  geom_line(data = stn_dl, aes(time_fn1            , SurfaceWTR_fn1 / SurfaceWTR_fn2, col = 'DL no prcs')) +
+  geom_line(data = stn_dlnoM, aes(time_fn1            , SurfaceWTR_fn1 / SurfaceWTR_fn2, col = 'DL no mod')) +
+  xlab('') + 
+  ylab(expression(atop("Surface Water temperature", paste("Signal-to-Noise Ratio (-)")))) +
+  scale_colour_manual(values=cbp2) +
+  theme_bw() +
+  theme(legend.title = element_blank()) 
+g2 <- ggplot() +
+  geom_line(data = stn_hy, aes(time_fn1            , BottomWTR_fn1  / BottomWTR_fn2, col = 'Hybrid')) +
+  geom_line(data = stn_dl, aes(time_fn1            , BottomWTR_fn1  / BottomWTR_fn2, col = 'DL no prcs')) +
+  geom_line(data = stn_dlnoM, aes(time_fn1            , BottomWTR_fn1  / BottomWTR_fn2, col = 'DL no mod')) +
+  xlab('') + 
+  ylab(expression(atop("Bottom Water temperature", paste("Signal-to-Noise Ratio (-)")))) +
+  scale_colour_manual(values=cbp2) +
+  theme_bw() +
+  theme(legend.title = element_blank()) 
+g3 <- ggplot() +
+  geom_line(data = stn_hy, aes(time_fn1            , SchmidtStability_fn1  / SchmidtStability_fn2, col = 'Hybrid')) +
+  geom_line(data = stn_dl, aes(time_fn1            , SchmidtStability_fn1  / SchmidtStability_fn2, col = 'DL no prcs')) +
+  geom_line(data = stn_dlnoM, aes(time_fn1            , SchmidtStability_fn1  / SchmidtStability_fn2, col = 'DL no mod')) +
+  xlab('') + 
+  ylab(expression(atop("Schmidt stability", paste("Signal-to-Noise Ratio (-)")))) +
+  scale_colour_manual(values=cbp2) +
+  theme_bw() +
+  theme(legend.title = element_blank()) 
+g4 <- (g1 / g2 /g3) + plot_layout(guides = 'collect') &theme(legend.position = 'bottom')
+ggsave(plot = g4, filename = "figs/Fig6.png", dpi = 300, width = 5, height =8, units = 'in')
 
