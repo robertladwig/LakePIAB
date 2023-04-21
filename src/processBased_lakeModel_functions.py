@@ -2231,6 +2231,7 @@ def run_thermalmodel_hybrid(
   um_ice = np.full([nx, nCol], np.nan)
   n2m = np.full([nx, nCol], np.nan)
   meteo_pgdl = np.full([28, nCol], np.nan)
+  densityViolation = np.full([nx, nCol], np.nan)
   
   if not kd_light is None:
     def kd(n): # using this shortcut for now / testing if it works
@@ -2490,6 +2491,12 @@ def run_thermalmodel_hybrid(
     
     um[:, idn] = u
     
+    densityvio = u * 0.0
+    for dep in range(0, nx-1):
+        if calc_dens(u[dep]) > calc_dens(u[dep+1]):
+            densityvio[dep] = 1
+    
+    densityViolation[:, idn] = densityvio
     
     diffusion_res = diffusion_module(
         un = u_pb,
@@ -2594,7 +2601,8 @@ def run_thermalmodel_hybrid(
                'temp_ice' : um_ice,
                'meteo_input' : meteo_pgdl,
                'buoyancy' : n2m,
-               'density_snow' : rho_snow}
+               'density_snow' : rho_snow,
+               'densityViolation': densityViolation}
   
   return(dat)
 
@@ -2704,6 +2712,7 @@ def run_thermalmodel_deep(
   um_ice = np.full([nx, nCol], np.nan)
   n2m = np.full([nx, nCol], np.nan)
   meteo_pgdl = np.full([28, nCol], np.nan)
+  densityViolation = np.full([nx, nCol], np.nan)
   
   if not kd_light is None:
     def kd(n): # using this shortcut for now / testing if it works
@@ -2778,8 +2787,8 @@ def run_thermalmodel_deep(
     def __len__(self):
         return len(self.X)
   
-  m0_PATH =  f"./../MCL/" + pgdl_model + "/saved_models/directdeep_model_finetuned.pth"
-
+  #m0_PATH =  f"./../MCL/" + pgdl_model + "/saved_models/directdeep_model_finetuned.pth"
+  m0_PATH =  f"./../MCL/" + pgdl_model + "/saved_models/direct_model_time.pth"
   
   m0_layers = [8, 32, 32,32,32,32,32,32,32,32,32, 1] # 20
 
@@ -2936,7 +2945,12 @@ def run_thermalmodel_deep(
     
     um_conv[:, idn] = u
     
+    densityvio = u * 0.0
+    for dep in range(0, nx-1):
+        if calc_dens(u[dep]) > calc_dens(u[dep+1]):
+            densityvio[dep] = 1
     
+    densityViolation[:, idn] = densityvio
     
     
 
@@ -3079,7 +3093,8 @@ def run_thermalmodel_deep(
                'temp_ice' : um_ice,
                'meteo_input' : meteo_pgdl,
                'buoyancy' : n2m,
-               'density_snow' : rho_snow}
+               'density_snow' : rho_snow,
+               'densityViolation': densityViolation}
   
   return(dat)
 
@@ -3188,6 +3203,7 @@ def run_thermalmodel_deep_noModule(
   um_ice = np.full([nx, nCol], np.nan)
   n2m = np.full([nx, nCol], np.nan)
   meteo_pgdl = np.full([28, nCol], np.nan)
+  densityViolation = np.full([nx, nCol], np.nan)
   
   if not kd_light is None:
     def kd(n): # using this shortcut for now / testing if it works
@@ -3465,7 +3481,13 @@ def run_thermalmodel_deep_noModule(
     
  
     um[:, idn] = u
-
+    
+    densityvio = u * 0.0
+    for dep in range(0, nx-1):
+        if calc_dens(u[dep]) > calc_dens(u[dep+1]):
+            densityvio[dep] = 1
+    
+    densityViolation[:, idn] = densityvio
     
     u = u_pb
     
@@ -3549,7 +3571,8 @@ def run_thermalmodel_deep_noModule(
                'temp_ice' : um_ice,
                'meteo_input' : meteo_pgdl,
                'buoyancy' : n2m,
-               'density_snow' : rho_snow}
+               'density_snow' : rho_snow,
+               'densityViolation': densityViolation}
   
   return(dat)
 

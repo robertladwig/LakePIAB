@@ -99,8 +99,8 @@ meteo_all = provide_meteorology(meteofile = '../input/Mendota_2002.csv',
                     windfactor = 1.0)
                      
 hydrodynamic_timestep = 24 * dt
-total_runtime =  (365*2) * hydrodynamic_timestep/dt  #365 *1 # 14 * 365
-startTime =   (0 + 365*12) * hydrodynamic_timestep/dt #150 * 24 * 3600
+total_runtime =  (365*1.5) * hydrodynamic_timestep/dt  #365 *1 # 14 * 365
+startTime =   (120 + 365*12) * hydrodynamic_timestep/dt #150 * 24 * 3600
 endTime =  (startTime + total_runtime) # * hydrodynamic_timestep/dt) - 1
 
 startingDate = meteo_all[0]['date'][startTime] #* hydrodynamic_timestep/dt]
@@ -184,6 +184,7 @@ buoyancy = res['buoyancy']
 icethickness= res['icethickness']
 snowthickness= res['snowthickness']
 snowicethickness= res['snowicethickness']
+densityViolation= res['densityViolation']
 
 
 # convert averages from array to data frame
@@ -241,7 +242,7 @@ sns.heatmap(temp, cmap=plt.cm.get_cmap('Spectral_r'),  xticklabels=1000, ytickla
 ax.contour(np.arange(.5, temp.shape[1]), np.arange(.5, temp.shape[0]), calc_dens(temp), levels=[999],
            colors=['black', 'gray'],
            linestyles = 'dotted')
-ax.set_ylabel("Depth", fontsize=15)
+ax.set_ylabel("Depth (m)", fontsize=15)
 ax.set_xlabel("Time", fontsize=15)    
 ax.collections[0].colorbar.set_label("Water Temperature  ($^\circ$C)")
 xticks_ix = np.array(ax.get_xticks()).astype(int)
@@ -250,7 +251,11 @@ nelement = len(times)//N_pts
 #time_label = time_label[::nelement]
 ax.xaxis.set_major_locator(plt.MaxNLocator(N_pts))
 ax.set_xticklabels(time_label, rotation=0)
+yticks_ix = np.array(ax.get_yticks()).astype(int)
+depth_label = yticks_ix / 2
+ax.set_yticklabels(depth_label, rotation=0)
 plt.show()
+
 #plt.savefig('../figs/verif_heatmap_hybrid.png')
 
 dt = pd.read_csv('../input/observed_df_lter_hourly_wide_clean.csv', index_col=0)
@@ -346,3 +351,22 @@ df2.columns = ["AirTemp_degC", "Longwave_Wm-2",
                   'dt_iceon_avg_prior', 'icemovAvg_prior']
 df = pd.concat([df1, df2], axis = 1)
 df.to_csv('../verification/hy_meteorology.csv', index=None)
+
+
+
+
+fig, ax = plt.subplots(figsize=(15,5))
+sns.heatmap(densityViolation, cmap=plt.cm.get_cmap('Spectral_r'),  xticklabels=1000, yticklabels=2)
+ax.set_ylabel("Depth (m)", fontsize=15)
+ax.set_xlabel("Time", fontsize=15)    
+ax.collections[0].colorbar.set_label("Density violation)")
+xticks_ix = np.array(ax.get_xticks()).astype(int)
+time_label = times[xticks_ix]
+nelement = len(times)//N_pts
+#time_label = time_label[::nelement]
+ax.xaxis.set_major_locator(plt.MaxNLocator(N_pts))
+ax.set_xticklabels(time_label, rotation=0)
+yticks_ix = np.array(ax.get_yticks()).astype(int)
+depth_label = yticks_ix / 2
+ax.set_yticklabels(depth_label, rotation=0)
+plt.show()

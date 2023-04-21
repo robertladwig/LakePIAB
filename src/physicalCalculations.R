@@ -316,40 +316,91 @@ Density_timeSeries_Hybrid_DL <- ggplot() +
   theme_bw() +
   theme(legend.title = element_blank()) 
 
-Density_timeSeries_Hybrid <- ggplot() +
-  geom_line(data = hy_df, aes(time, EpiDense/MetaDense), linewidth = linesize, alpha = alphasize) +
-  # geom_line(data = hy_df, aes(time, MetaDense/HypoDense), linewidth = linesize, alpha = alphasize, linetype = 'dashed') +
+hy_df <- hy_df %>%
+  mutate(DensityViolation = ifelse(EpiDense/MetaDense > 1, 1, 0))
+
+dl_df <- dl_df %>%
+  mutate(DensityViolation = ifelse(EpiDense/MetaDense > 1, 1, 0))
+dlnoM_df <- dlnoM_df %>%
+  mutate(DensityViolation = ifelse(EpiDense/MetaDense > 1, 1, 0))
+
+range(hy_df$EpiDense/hy_df$MetaDense, na.rm = T)
+range(dl_df$EpiDense/dl_df$MetaDense, na.rm = T)
+range(dlnoM_df$EpiDense/dlnoM_df$MetaDense, na.rm = T)
+
+Density_timeSeries_Hybrid_alt <- ggplot() +
+  geom_line(data = hy_df, aes(time, EpiDense, linetype = 'EpiDense'), linewidth = linesize, alpha = alphasize) +
+  geom_line(data = hy_df, aes(time, MetaDense, linetype = 'MetaDense'), linewidth = linesize, alpha = alphasize) +
+  geom_point(data = subset(hy_df, DensityViolation ==1), aes(time, MetaDense), color = 'red', alpha = alphasize, size =0.15) +
   xlab('') +  ylab(expression(atop("Epilimnion by", paste(" metalimnion density (-)")))) +
-  scale_colour_manual(values=c('black', 'blue')) +
+  scale_colour_manual(values=c('black','black', 'red')) +
   ggtitle('Hybrid framework') +
-  ylim(0.998, 1.0001) +
+  ylim(996, 1000) +
   theme_bw() +
   theme(legend.title = element_blank()) 
+
+Density_timeSeries_Hybrid_DL_alt <- ggplot() +
+  geom_line(data = dl_df, aes(time, EpiDense, linetype = 'EpiDense'), linewidth = linesize, alpha = alphasize) +
+  geom_line(data = dl_df, aes(time, MetaDense, linetype = 'MetaDense'), linewidth = linesize, alpha = alphasize) +
+  geom_point(data = subset(dl_df, DensityViolation ==1), aes(time, MetaDense), color = 'red', alpha = alphasize, size =0.15) +
+  xlab('') +  ylab(expression(atop("Epilimnion by", paste(" metalimnion density (-)")))) +
+  scale_colour_manual(values=c('black','black', 'red')) +
+  ggtitle('Deep learning model (no process)') +
+  ylim(996, 1000) +
+  theme_bw() +
+  theme(legend.title = element_blank()) 
+
+Density_timeSeries_Hybrid_DLnoM_alt <- ggplot() +
+  geom_line(data = dlnoM_df, aes(time, EpiDense, linetype = 'EpiDense'), linewidth = linesize, alpha = alphasize) +
+  geom_line(data = dlnoM_df, aes(time, MetaDense, linetype = 'MetaDense'), linewidth = linesize, alpha = alphasize) +
+  geom_point(data = subset(dlnoM_df, DensityViolation ==1), aes(time, MetaDense), color = 'red', alpha = alphasize, size =0.15) +
+  xlab('') +  ylab(expression(atop("Epilimnion by", paste(" metalimnion density (-)")))) +
+  scale_colour_manual(values=c('black','black', 'red')) +
+  ggtitle('Pretrained Deep learning model (no module)') +
+  ylim(996, 1000) +
+  theme_bw() +
+  theme(legend.title = element_blank()) 
+
+
+p9 <- (Density_timeSeries_Hybrid_alt / Density_timeSeries_Hybrid_DL_alt / Density_timeSeries_Hybrid_DLnoM_alt) & plot_layout(guides = 'collect') & plot_annotation(tag_levels = 'A')# &theme(legend.position = 'bottom')
+ggsave(plot = p9, filename = "figs/Fig5_alt.png", dpi = 300, width = 9, height =8, units = 'in')
+
+
+
+Density_timeSeries_Hybrid <- ggplot() +
+  geom_line(data = hy_df, aes(time, EpiDense/MetaDense), linewidth = linesize, alpha = alphasize) +
+  geom_point(data = subset(hy_df, DensityViolation ==1), aes(time, EpiDense/MetaDense), color = 'red', alpha = alphasize, size =0.15) +
+  xlab('') +  ylab(expression(atop("Epilimnion by", paste(" metalimnion density (-)")))) +
+  scale_colour_manual(values=c('black', 'red')) +
+  ggtitle('Hybrid framework') +
+  ylim(0.998, 1.0003) +
+  theme_bw() +
+  theme(legend.title = element_blank(), legend.position = "none") 
 
 Density_timeSeries_Hybrid_DL <- ggplot() +
   geom_line(data = dl_df, aes(time, EpiDense/MetaDense), linewidth = linesize, alpha = alphasize) +
-  # geom_line(data = dl_df, aes(time, MetaDense/HypoDense), linewidth = linesize, alpha = alphasize, linetype = 'dashed') +
+  geom_point(data = subset(dl_df, DensityViolation ==1), aes(time, EpiDense/MetaDense), color = 'red', alpha = alphasize, size =0.15) +
   xlab('') +# ylab(paste("Epilimnion by",\n," metalimnion density (-)")) +
   ylab(expression(atop("Epilimnion by", paste(" metalimnion density (-)")))) +
-  scale_colour_manual(values=c('black', 'blue')) +
-  ggtitle('Deep learning model no process') +
-  ylim(0.998, 1.0001) +
+  scale_colour_manual(values=c('black', 'red')) +
+  ggtitle('Deep learning model (no process)') +
+  ylim(0.998, 1.0003) +
   theme_bw() +
-  theme(legend.title = element_blank()) 
+  theme(legend.title = element_blank(), legend.position = "none") 
 
 Density_timeSeries_Hybrid_DLnoM <- ggplot() +
   geom_line(data = dlnoM_df, aes(time, EpiDense/MetaDense), linewidth = linesize, alpha = alphasize) +
-  # geom_line(data = dl_df, aes(time, MetaDense/HypoDense), linewidth = linesize, alpha = alphasize, linetype = 'dashed') +
+  geom_point(data = subset(dlnoM_df, DensityViolation ==1), aes(time, EpiDense/MetaDense), color = 'red', alpha = alphasize, size =0.15) +
   xlab('') +# ylab(paste("Epilimnion by",\n," metalimnion density (-)")) +
   ylab(expression(atop("Epilimnion by", paste(" metalimnion density (-)")))) +
-  scale_colour_manual(values=c('black', 'blue')) +
-  ggtitle('Deep learning model no module') +
-  ylim(0.998, 1.0001) +
+  scale_colour_manual(values=c('black', 'red')) +
+  ggtitle('Pretrained Deep learning model (no module)') +
+  ylim(0.998, 1.0003) +
   theme_bw() +
-  theme(legend.title = element_blank()) 
+  theme(legend.title = element_blank(),legend.position = "none") 
 
-p3 <- Density_timeSeries_Hybrid / Density_timeSeries_Hybrid_DL / Density_timeSeries_Hybrid_DLnoM & plot_layout(guides = 'collect') &theme(legend.position = 'bottom')
-ggsave(plot = p3, filename = "figs/Fig5.png", dpi = 300, width = 9, height =5, units = 'in')
+p3 <- Density_timeSeries_Hybrid / Density_timeSeries_Hybrid_DL / Density_timeSeries_Hybrid_DLnoM & plot_layout(guides = 'collect') & plot_annotation(tag_levels = 'A')# &theme(legend.position = 'bottom')
+ggsave(plot = p3, filename = "figs/Fig5.png", dpi = 300, width = 9, height =8, units = 'in')
 
 Surftemp_timeSeries <- ggplot() +
   geom_line(data = dl_df, aes(time, SurfaceWTR, col = 'DL no prcs'), linewidth = linesize, alpha = alphasize) +
@@ -503,14 +554,14 @@ LN_timeSeries2 <- ggplot() +
 
 p1 <- (Surftemp_timeSeries / Bottomtemp_timeSeries /Schmidt_timeSeries /N2_timeSeries)  + plot_layout(guides = 'collect') &theme(legend.position = 'bottom')
 ggsave(plot = p1, filename = "figs/Fig3.png", dpi = 300, width = 15, height =11, units = 'in')
-  
+
 p2 <-  ((volumes_timeSeries/  Metavolumes_timeSeries/
  isotherms_timeSeries ) | (volumes_timeSeries2/  Metavolumes_timeSeries2/
                              isotherms_timeSeries2 ))+ plot_layout(guides = 'collect')& theme(legend.position = 'bottom')
-ggsave(plot = p2, filename = "figs/Fig4.png", dpi = 300, width = 15, height = 9, units = 'in')
+# ggsave(plot = p2, filename = "figs/Fig4.png", dpi = 300, width = 15, height = 9, units = 'in')
 
-p3 <- p1 / p2 + plot_layout(widths = c(2,2,2,2,2), heights = unit(c(4,4,4,4, 14), c('cm', 'cm', "cm", "cm", "cm")))
-ggsave(plot = p3, filename = "figs/combined_Fig3+4.png", dpi = 300, width = 10, height = 16, units = 'in')
+p4 <- p1 / p2 + plot_layout(widths = c(2,2,2,2,2), heights = unit(c(4,4,4,4, 14), c('cm', 'cm', "cm", "cm", "cm"))) & plot_annotation(tag_levels = 'A')
+ggsave(plot = p4, filename = "figs/Fig4.png", dpi = 300, width = 10, height = 16, units = 'in')
 
 
 
@@ -562,6 +613,6 @@ g3 <- ggplot() +
   scale_colour_manual(values=cbp2) +
   theme_bw() +
   theme(legend.title = element_blank()) 
-g4 <- (g1 / g2 /g3) + plot_layout(guides = 'collect') &theme(legend.position = 'bottom')
+g4 <- (g1 / g2 /g3) + plot_layout(guides = 'collect') &theme(legend.position = 'bottom') &  plot_annotation(tag_levels = 'A')
 ggsave(plot = g4, filename = "figs/Fig6.png", dpi = 300, width = 5, height =8, units = 'in')
 

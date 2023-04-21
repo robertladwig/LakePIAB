@@ -516,21 +516,21 @@ ggsave(plot = p3, filename = "figs/combined_Fig3+4_25.png", dpi = 300, width = 1
 stn_hy <- hy_df %>%
   mutate(doy = yday(time)) %>%
   mutate(week = lubridate::isoweek(time)) %>%
-  group_by(year, month) %>%
+  group_by(year, week) %>%
   select(time, SurfaceWTR, BottomWTR, SchmidtStability) %>%
   summarise_all(list(mean, sd))
 
 stn_dl <- dl_df %>%
   mutate(doy = yday(time)) %>%
   mutate(week = lubridate::isoweek(time)) %>%
-  group_by(year, month) %>%
+  group_by(year, week) %>%
   select(time,SurfaceWTR, BottomWTR, SchmidtStability) %>%
   summarise_all(list(mean, sd))
 
 stn_dlnoM <- dlnoM_df %>%
   mutate(doy = yday(time)) %>%
   mutate(week = lubridate::isoweek(time)) %>%
-  group_by(year, month) %>%
+  group_by(year, week) %>%
   select(time,SurfaceWTR, BottomWTR, SchmidtStability) %>%
   summarise_all(list(mean, sd))
 
@@ -564,3 +564,12 @@ g3 <- ggplot() +
 g4 <- (g1 / g2 /g3) + plot_layout(guides = 'collect') &theme(legend.position = 'bottom')
 ggsave(plot = g4, filename = "figs/Fig6_25.png", dpi = 300, width = 5, height =8, units = 'in')
 
+ggplot() +
+  geom_boxplot(data = hy_df, aes(as.factor(month)            , SurfaceWTR, col = 'Hybrid')) +
+  geom_boxplot(data = dl_df, aes(as.factor(month)             , SurfaceWTR, col = 'DL no prcs')) +
+  geom_boxplot(data = dlnoM_df, aes(as.factor(month)             , SurfaceWTR, col = 'DL no mod')) +
+  xlab('') + 
+  ylab(expression(atop("Surface Water temperature", paste("Signal-to-Noise Ratio (-)")))) +
+  scale_colour_manual(values=cbp2) +
+  theme_bw() +
+  theme(legend.title = element_blank()) 
