@@ -492,7 +492,7 @@ Density_timeSeries_Hybrid_all <- ggplot() +
   xlab('') +# ylab(paste("Epilimnion by",\n," metalimnion density (-)")) +
   # ylab(expression(atop("Epilimnion by", paste(" metalimnion density (-)")))) +
   # ylab(paste("Epilimnion - metalimnion density (-)")) +
-  labs(y = expression(paste("Avg. metalimnion - epilimnion density (kg ",m^-3,")")), x = '') +
+  labs(y = expression(paste("Avg. epilimnion - metalimnion density (kg ",m^-3,")")), x = '') +
   scale_colour_manual(values=c('black', 'red')) +
   # ggtitle('Pretrained Deep learning model (no module)') +
   scale_colour_manual(values=cbp2) +
