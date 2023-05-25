@@ -1,5 +1,5 @@
-setwd("C:/Users/ladwi/Documents/Projects/R/LakePIAB")
-# setwd("/Users/robertladwig/Documents/DSI/LakePIAB")
+#setwd("C:/Users/ladwi/Documents/Projects/R/LakePIAB")
+ setwd("/Users/robertladwig/Documents/DSI/LakePIAB")
 library(tidyverse)
 library(rLakeAnalyzer)
 library(patchwork)
@@ -319,7 +319,7 @@ cbp2 <- c("#66C2A5","#4DAF4A",  "#FF7F00",'black',  "#377EB8" )
 library(MetBrewer)
 colors = met.brewer(name="Egypt", n=4, type="discrete")
 cbp2 <- c(colors[2:3], colors[1], "black", colors[4])
-
+cbp_noobs <- c(colors[2:3], colors[1],    colors[4])
 linesize = 0.7
 alphasize =0.95
 
@@ -661,6 +661,8 @@ LN_timeSeries2 <- ggplot() +
 p1 <- (Surftemp_timeSeries / Bottomtemp_timeSeries /Schmidt_timeSeries /N2_timeSeries)  + plot_layout(guides = 'collect') &theme(legend.position = 'bottom')
 ggsave(plot = p1, filename = "figs/Fig3.png", dpi = 300, width = 15, height =11, units = 'in')
 
+ggsave(plot = (isotherms_timeSeries | isotherms_timeSeries2), filename = "figs/IAGLR_iso15.png", dpi = 300, width = 15, height =6, units = 'in')
+
 p2 <-  ((volumes_timeSeries/  Metavolumes_timeSeries/
  isotherms_timeSeries ) | (volumes_timeSeries2/  Metavolumes_timeSeries2/
                              isotherms_timeSeries2 ))+ plot_layout(guides = 'collect')& theme(legend.position = 'bottom')
@@ -722,3 +724,55 @@ g3 <- ggplot() +
 g4 <- (g1 / g2 /g3) + plot_layout(guides = 'collect') &theme(legend.position = 'bottom') &  plot_annotation(tag_levels = 'A')
 ggsave(plot = g4, filename = "figs/Fig6.png", dpi = 300, width = 5, height =7, units = 'in')
 
+
+
+fit_process <- data.frame(
+  'variable' = c('total temp', 'surf temp', 'bot temp', 'schmidt', 'buoyancy', 'thermocline', 'upper meta', 'lower meta', '13 iso', '15 iso', '17 iso'),
+  'rmse' = c(4.63, 4.34, 4.02, 139.92, 0.006, 5.63, 6.93, 3.28, 4.40, 4.34, 4.16),
+  'nse' = c(0.53, .77, -1.35, .79,-0.14, -4.64, -5.21, -2, -0.76, -1.09, -1.94),
+  'id' = 'PB'
+)
+fit_hybrid <- data.frame(
+  'variable' = c('total temp', 'surf temp', 'bot temp', 'schmidt', 'buoyancy', 'thermocline', 'upper meta', 'lower meta', '13 iso', '15 iso', '17 iso'),
+  'rmse' = c(2.14,2.12,1.73,85.43, 0.004, 2.71, 4.05, 1.64, 1.94, 1.68, 1.57),
+  'nse' = c(.9, .94, .56, .92, .25, -.31, -1.13, .24, .65, .68, .57),
+  'id' = 'Hybrid'
+)
+fit_dlnoprcs <- data.frame(
+  'variable' = c('total temp', 'surf temp', 'bot temp', 'schmidt', 'buoyancy', 'thermocline', 'upper meta', 'lower meta', '13 iso', '15 iso', '17 iso'),
+  'rmse' = c(4.14,5.99,3.1, 255.54, 0.006, 3.16, 3.6, 2.88, 3.64, 2.94, 2.97),
+  'nse' = c(0.62, 0.57, -0.4, 0.31, -0.19, -0.77, -0.68, -1.31, -0.2, 0.03, -0.5),
+  'id' = 'DL no prcs'
+)
+fit_dlnomod <- data.frame(
+  'variable' = c('total temp', 'surf temp', 'bot temp', 'schmidt', 'buoyancy', 'thermocline', 'upper meta', 'lower meta', '13 iso', '15 iso', '17 iso'),
+  'rmse' = c(2.11, 1.57, 2.10, 85.85, 0.005, 2.65, 4.71, 2.53, 3.88, 2.58, 2.34),
+  'nse' = c(0.9, .97, .35, .92, -0.02, -0.25, -1.88, -0.78, -0.37, .25, 0.08),
+  'id' = 'DL no mod'
+)
+
+
+depths <- ggplot() +
+  geom_point(data = fit_process %>% filter(variable %in% c('thermocline', 'upper meta', 'lower meta', '13 iso', '15 iso', '17 iso')), aes(rmse, nse, shape = variable, col = id), size = 3) +
+  geom_point(data = fit_hybrid%>% filter(variable %in% c('thermocline', 'upper meta', 'lower meta', '13 iso', '15 iso', '17 iso')), aes(rmse, nse, shape = variable, col = id), size = 3) +
+  geom_point(data = fit_dlnoprcs%>% filter(variable %in% c('thermocline', 'upper meta', 'lower meta', '13 iso', '15 iso', '17 iso')), aes(rmse, nse, shape = variable, col = id), size = 3) +
+  geom_point(data = fit_dlnomod%>% filter(variable %in% c('thermocline', 'upper meta', 'lower meta', '13 iso', '15 iso', '17 iso')), aes(rmse, nse, shape = variable, col = id), size = 3) +
+  scale_colour_manual(values=cbp_noobs) +
+  # facet_wrap(~ variable, scales = 'free') +
+  xlab('RMSE (m)') + ylab('NSE (-)') +
+  theme_bw() +
+  theme(legend.title = element_blank()) 
+
+
+temps <- ggplot() +
+  geom_point(data = fit_process %>% filter(variable %in% c('total temp', 'surf temp', 'bot temp')), aes(rmse, nse, shape = variable, col = id), size = 3) +
+  geom_point(data = fit_hybrid%>% filter(variable %in% c('total temp', 'surf temp', 'bot temp')), aes(rmse, nse, shape = variable, col = id), size = 3) +
+  geom_point(data = fit_dlnoprcs%>% filter(variable %in% c('total temp', 'surf temp', 'bot temp')), aes(rmse, nse, shape = variable, col = id), size = 3) +
+  geom_point(data = fit_dlnomod%>% filter(variable %in% c('total temp', 'surf temp', 'bot temp')), aes(rmse, nse, shape = variable, col = id), size = 3) +
+  scale_colour_manual(values=cbp_noobs) +
+  # facet_wrap(~ variable, scales = 'free') +
+  xlab('RMSE (\u00B0C)') + ylab('NSE (-)') +
+  theme_bw() +
+  theme(legend.title = element_blank()) 
+g20 <- (temps | depths)+ plot_layout(guides = 'collect') &theme(legend.position = 'bottom') &  plot_annotation(tag_levels = 'A')
+ggsave(plot = g20, filename = "figs/IAGLR_performance.png", dpi = 300, width = 11, height =5, units = 'in')
