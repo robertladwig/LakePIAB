@@ -1,5 +1,6 @@
 #setwd("C:/Users/ladwi/Documents/Projects/R/LakePIAB")
  setwd("/Users/robertladwig/Documents/DSI/LakePIAB")
+ setwd('/home/robert/Projects/LakePIAB')
 library(tidyverse)
 library(rLakeAnalyzer)
 library(patchwork)
@@ -353,6 +354,9 @@ dl_df <- dl_df %>%
 dlnoM_df <- dlnoM_df %>%
   mutate(DensityViolation = ifelse(EpiDense/MetaDense > 1, 1, 0))
 
+pb_df <- pb_df %>%
+  mutate(DensityViolation = ifelse(EpiDense/MetaDense > 1, 1, 0))
+
 range(hy_df$EpiDense/hy_df$MetaDense, na.rm = T)
 range(dl_df$EpiDense/dl_df$MetaDense, na.rm = T)
 range(dlnoM_df$EpiDense/dlnoM_df$MetaDense, na.rm = T)
@@ -488,6 +492,7 @@ Density_timeSeries_Hybrid_all <- ggplot() +
   geom_point(data = subset(hy_df, DensityViolation ==1), aes(time, EpiDense-MetaDense, col = 'Hybrid'), alpha = alphasize) +
   geom_point(data = subset(dl_df, DensityViolation ==1), aes(time, EpiDense-MetaDense, col = 'DL no prcs'),  alpha = alphasize) +
   geom_point(data =  subset(dlnoM_df, DensityViolation ==1), aes(time, EpiDense-MetaDense, col = 'DL no mod'),  alpha = alphasize) +
+  geom_point(data =  subset(pb_df, DensityViolation ==1), aes(time, EpiDense-MetaDense, col = 'PB'),  alpha = alphasize) +
   # geom_point(data = subset(dlnoM_df, DensityViolation ==1), aes(time, EpiDense/MetaDense), color = 'red', alpha = alphasize, size =0.15) +
   xlab('') +# ylab(paste("Epilimnion by",\n," metalimnion density (-)")) +
   # ylab(expression(atop("Epilimnion by", paste(" metalimnion density (-)")))) +
@@ -495,7 +500,7 @@ Density_timeSeries_Hybrid_all <- ggplot() +
   labs(y = expression(paste("Avg. epilimnion - metalimnion density (kg ",m^-3,")")), x = '') +
   scale_colour_manual(values=c('black', 'red')) +
   # ggtitle('Pretrained Deep learning model (no module)') +
-  scale_colour_manual(values=cbp2) +
+  scale_colour_manual(values=cbp2[-4]) +
   # geom_hline(yintercept = 1e-4) +
   # scale_y_continuous(trans='log10') +
   # scale_y_continuous(labels = scientific) +
