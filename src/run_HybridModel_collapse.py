@@ -99,7 +99,7 @@ meteo_all = provide_meteorology(meteofile = '../input/Mendota_2002.csv',
                     windfactor = 1.0)
                      
 hydrodynamic_timestep = 24 * dt
-total_runtime =  (365*1.5) * hydrodynamic_timestep/dt  #365 *1 # 14 * 365
+total_runtime =  (90*1.5) * hydrodynamic_timestep/dt  #365 *1 # 14 * 365 #(365*1.5) * hydrodynamic_timestep/dt  #365 *1 # 14 * 365
 startTime =   (120 + 365*12) * hydrodynamic_timestep/dt #150 * 24 * 3600
 endTime =  (startTime + total_runtime) # * hydrodynamic_timestep/dt) - 1
 
@@ -313,49 +313,137 @@ ax.set_xticklabels(time_label, rotation=0)
 plt.show()
 
 
+# PARALLEL
+# df1 = pd.DataFrame(times)
+# df1.columns = ['time']
+# t1 = np.matrix(temp_initial)
+# t1 = t1.getT()
+# df2 = pd.DataFrame(t1)
+# df = pd.concat([df1, df2], axis = 1)
+# df.to_csv('../stability/parallel_init.csv', index=None)
 
-# heat temp.
+# df1 = pd.DataFrame(times)
+# df1.columns = ['time']
+# t1 = np.matrix(temp_heat)
+# t1 = t1.getT()
+# df2 = pd.DataFrame(t1)
+# df = pd.concat([df1, df2], axis = 1)
+# df.to_csv('../stability/parallel_heat.csv', index=None)
+
+# df1 = pd.DataFrame(times)
+# df1.columns = ['time']
+# t1 = np.matrix(temp_ice)
+# t1 = t1.getT()
+# df2 = pd.DataFrame(t1)
+# df = pd.concat([df1, df2], axis = 1)
+# df.to_csv('../stability/parallel_ice.csv', index=None)
+
+# df1 = pd.DataFrame(times)
+# df1.columns = ['time']
+# t1 = np.matrix(temp_diff)
+# t1 = t1.getT()
+# df2 = pd.DataFrame(t1)
+# df = pd.concat([df1, df2], axis = 1)
+# df.to_csv('../stability/parallel_diff.csv', index=None)
+
+# df1 = pd.DataFrame(times)
+# df1.columns = ['time']
+# t1 = np.matrix(temp_conv)
+# t1 = t1.getT()
+# df2 = pd.DataFrame(t1)
+# df = pd.concat([df1, df2], axis = 1)
+# df.to_csv('../stability/parallel_conv.csv', index=None)
+
+# df1 = pd.DataFrame(times)
+# df1.columns = ['time']
+# t1 = np.matrix(dt_obs)
+# t1 = t1.getT()
+# df2 = pd.DataFrame(t1)
+# df = pd.concat([df1, df2], axis = 1)
+# df.to_csv('../stability/observed.csv', index=None)
+
+# SINGLE
 df1 = pd.DataFrame(times)
 df1.columns = ['time']
-t1 = np.matrix(temp)
+t1 = np.matrix(temp_initial)
 t1 = t1.getT()
 df2 = pd.DataFrame(t1)
 df = pd.concat([df1, df2], axis = 1)
-df.to_csv('../verification/hy_temp.csv', index=None)
+df.to_csv('../stability/single_init.csv', index=None)
+
+df1 = pd.DataFrame(times)
+df1.columns = ['time']
+t1 = np.matrix(temp_heat)
+t1 = t1.getT()
+df2 = pd.DataFrame(t1)
+df = pd.concat([df1, df2], axis = 1)
+df.to_csv('../stability/single_heat.csv', index=None)
+
+df1 = pd.DataFrame(times)
+df1.columns = ['time']
+t1 = np.matrix(temp_ice)
+t1 = t1.getT()
+df2 = pd.DataFrame(t1)
+df = pd.concat([df1, df2], axis = 1)
+df.to_csv('../stability/single_ice.csv', index=None)
+
+df1 = pd.DataFrame(times)
+df1.columns = ['time']
+t1 = np.matrix(temp_diff)
+t1 = t1.getT()
+df2 = pd.DataFrame(t1)
+df = pd.concat([df1, df2], axis = 1)
+df.to_csv('../stability/single_diff.csv', index=None)
+
+df1 = pd.DataFrame(times)
+df1.columns = ['time']
+t1 = np.matrix(temp_conv)
+t1 = t1.getT()
+df2 = pd.DataFrame(t1)
+df = pd.concat([df1, df2], axis = 1)
+df.to_csv('../stability/single_conv.csv', index=None)
+
+df1 = pd.DataFrame(times)
+df1.columns = ['time']
+t1 = np.matrix(dt_obs)
+t1 = t1.getT()
+df2 = pd.DataFrame(t1)
+df = pd.concat([df1, df2], axis = 1)
+df.to_csv('../stability/observed.csv', index=None)
 
 # ice-snow
-df1 = pd.DataFrame(times)
-df1.columns = ['time']
-t1 = np.matrix(icethickness)
-t1 = t1.getT()
-df2 = pd.DataFrame(t1)
-df2.columns = ['ice']
-t1 = np.matrix(snowthickness)
-t1 = t1.getT()
-df3 = pd.DataFrame(t1)
-df3.columns = ['snow']
-t1 = np.matrix(snowicethickness)
-t1 = t1.getT()
-df4 = pd.DataFrame(t1)
-df4.columns = ['snowice']
-df = pd.concat([df1, df2, df3, df4], axis = 1)
-df.to_csv('../verification/hy_icesnow.csv', index=None)
+# df1 = pd.DataFrame(times)
+# df1.columns = ['time']
+# t1 = np.matrix(icethickness)
+# t1 = t1.getT()
+# df2 = pd.DataFrame(t1)
+# df2.columns = ['ice']
+# t1 = np.matrix(snowthickness)
+# t1 = t1.getT()
+# df3 = pd.DataFrame(t1)
+# df3.columns = ['snow']
+# t1 = np.matrix(snowicethickness)
+# t1 = t1.getT()
+# df4 = pd.DataFrame(t1)
+# df4.columns = ['snowice']
+# df = pd.concat([df1, df2, df3, df4], axis = 1)
+# df.to_csv('../verification/hy_icesnow.csv', index=None)
 
-# meteorology
-df1 = pd.DataFrame(times)
-df1.columns = ['time']
-t1 = np.matrix(meteo)
-t1 = t1.getT()
-df2 = pd.DataFrame(t1)
-df2.columns = ["AirTemp_degC", "Longwave_Wm-2",
-                  "Latent_Wm-2", "Sensible_Wm-2", "Shortwave_Wm-2",
-                  "lightExtinct_m-1","ShearVelocity_mS-1", "ShearStress_Nm-2",
-                  "Area_m2", "CC", 'ea', 'Jlw', 'Uw', 'Pa', 'RH', 'PP', 'IceSnowAttCoeff',
-                  'iceFlag', 'icemovAvg', 'density_snow', 'ice_prior', 'snow_prior', 
-                  'snowice_prior', 'rho_snow_prior', 'IceSnowAttCoeff_prior', 'iceFlag_prior',
-                  'dt_iceon_avg_prior', 'icemovAvg_prior']
-df = pd.concat([df1, df2], axis = 1)
-df.to_csv('../verification/hy_meteorology.csv', index=None)
+# # meteorology
+# df1 = pd.DataFrame(times)
+# df1.columns = ['time']
+# t1 = np.matrix(meteo)
+# t1 = t1.getT()
+# df2 = pd.DataFrame(t1)
+# df2.columns = ["AirTemp_degC", "Longwave_Wm-2",
+#                   "Latent_Wm-2", "Sensible_Wm-2", "Shortwave_Wm-2",
+#                   "lightExtinct_m-1","ShearVelocity_mS-1", "ShearStress_Nm-2",
+#                   "Area_m2", "CC", 'ea', 'Jlw', 'Uw', 'Pa', 'RH', 'PP', 'IceSnowAttCoeff',
+#                   'iceFlag', 'icemovAvg', 'density_snow', 'ice_prior', 'snow_prior', 
+#                   'snowice_prior', 'rho_snow_prior', 'IceSnowAttCoeff_prior', 'iceFlag_prior',
+#                   'dt_iceon_avg_prior', 'icemovAvg_prior']
+# df = pd.concat([df1, df2], axis = 1)
+# df.to_csv('../verification/hy_meteorology.csv', index=None)
 
 
 

@@ -2491,6 +2491,8 @@ def run_thermalmodel_hybrid(
     
     um[:, idn] = u
     
+    u_dl = u
+    
     densityvio = u * 0.0
     for dep in range(0, nx-1):
         if calc_dens(u[dep]) > calc_dens(u[dep+1]):
@@ -2498,28 +2500,28 @@ def run_thermalmodel_hybrid(
     
     densityViolation[:, idn] = densityvio
     
-    diffusion_res = diffusion_module(
-        un = u_pb,
-        kzn = kz,
-        Uw = Uw(n),
-        depth= depth,
-        dx = dx,
-        area = area,
-        dt = dt,
-        nx = nx,
-        ice = ice, 
-        diffusion_method = diffusion_method,
-        scheme = scheme)
+    # diffusion_res = diffusion_module(
+    #     un = u_pb,
+    #     kzn = kz,
+    #     Uw = Uw(n),
+    #     depth= depth,
+    #     dx = dx,
+    #     area = area,
+    #     dt = dt,
+    #     nx = nx,
+    #     ice = ice, 
+    #     diffusion_method = diffusion_method,
+    #     scheme = scheme)
     
-    u_pb = diffusion_res['temp']
-    convection_res = convection_module(
-        un = u_pb,
-        nx = nx,
-        volume = volume)
+    # u_pb = diffusion_res['temp']
+    # convection_res = convection_module(
+    #     un = u_pb,
+    #     nx = nx,
+    #     volume = volume)
     
-    u_pb = convection_res['temp']
+    # u_pb = convection_res['temp']
     
-    u = u_pb
+    u = u_dl # u_pb #u_dl#
     
     meteo_pgdl[0, idn] = heating_res['air_temp']
     meteo_pgdl[1, idn] = heating_res['longwave_flux']
