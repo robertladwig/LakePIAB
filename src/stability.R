@@ -1,5 +1,5 @@
-setwd("C:/Users/ladwi/Documents/Projects/R/LakePIAB")
-# setwd("/Users/robertladwig/Documents/DSI/LakePIAB")
+#setwd("C:/Users/ladwi/Documents/Projects/R/LakePIAB")
+setwd("/Users/robertladwig/Documents/DSI/LakePIAB")
 # setwd('/home/robert/Projects/LakePIAB')
 library(tidyverse)
 library(rLakeAnalyzer)
@@ -111,10 +111,10 @@ g <-ggplot() +
   geom_point(data = conv_s, aes(seq(1,nrow(conv_s)), X0,  col = "Single - Process")) +
   # geom_line(data = conv, aes(time, X0, col = "Parallel - Single")) +
   scale_y_continuous(trans = 'log10') +
-  ylab(expression("log10" *Delta * "Temperature")) +
+  ylab(expression("log10(" *Delta * "Temperature (\u00B0C))")) +
   xlab("Time step (3600 s)") +
   scale_colour_manual(values=c('blue','red', 'red')) +
-  ggtitle('Output after convection step') +
+  ggtitle('Output after final hybrid MCL model step') +
   xlim(0,1000)+
   theme_bw() +
   theme(legend.title = element_blank()) ; g
@@ -122,4 +122,4 @@ g <-ggplot() +
 p9 = g_heat / g_ice / g_diff / g_conv & plot_layout(guides = 'collect') & plot_annotation(tag_levels = 'A')# &theme(legend.position = 'bottom')
 ggsave(plot = p9, filename = "figs/Fig7_stability.png", dpi = 300, width = 9, height =12, units = 'in')
 
-ggsave(plot = g, filename = "figs/Fig8_stability.png", dpi = 300, width = 9, height =6, units = 'in')
+ggsave(plot = g, filename = "figs/Fig8_stability.png", dpi = 300, width = 15, height =6, units = 'in')
