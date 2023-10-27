@@ -24,5 +24,7 @@ Additionally, this folder includes R-scripts to analyse the model outputs
 
 \MCL includes the Jupyter notebooks for model pretraining and fine-tuning
 
+Note that for running the scripts you need to decompress the zip files in \input and \MCL\02_training
+
 
 <a href="url"><img src="logo.png" width=70% height=70% ></a>
