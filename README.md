@@ -1,8 +1,9 @@
 # LakePIAB
 Authors: Robert Ladwig, Arka Daw, Cal Buelo, Abhilash Neog
 
-LakePIAB (Lake Physics in a Box) - a Modular Compositional Learning framework combining process-based model formulations and deep learning to simulate 1D vertical water temperature dynamics.
+LakePIAB (Lake Physics in a Box) - a Modular Compositional Learning framework combining process-based model formulations and deep learning to simulate 1D vertical water temperature dynamics. Preprint highlighting the Modular Compositional Learning methodology and its performance is available [here](https://doi.org/10.22541/essoar.169143862.25982294/v1).
 
+## File structure
 \src includes scripts for running the models:
 - run_ProcessModel.py runs the process-based model for generating training data
 - run_DeepModel_noModule.py run the pretrained deep learning model (no modularisation)
@@ -24,6 +25,7 @@ Additionally, this folder includes R-scripts to analyse the model outputs
 
 \MCL includes the Jupyter notebooks for model pretraining and fine-tuning
 
+## Important
 Note that for running the scripts you need to decompress the zip files in \input and \MCL\02_training
 
 
