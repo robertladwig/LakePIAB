@@ -3,6 +3,8 @@ Authors: Robert Ladwig, Arka Daw, Cal Buelo, Abhilash Neog
 
 LakePIAB (Lake Physics in a Box) - a Modular Compositional Learning framework combining process-based model formulations and deep learning to simulate 1D vertical water temperature dynamics. Preprint highlighting the Modular Compositional Learning methodology and its performance is available [here](https://doi.org/10.22541/essoar.169143862.25982294/v1).
 
+$A \frac{\partial T}{\partial t}=\frac{\partial}{\partial z}(A K_z \frac{\partial T}{\partial z}) + \frac{1}{{\rho_w c_p}}\frac{\partial H(z)}{\partial z}  + \frac{\partial A}{\partial z}\frac{H_{geo}}{\rho_w c_p}$
+
 ## File structure
 \src includes scripts for running the models:
 - run_ProcessModel.py runs the process-based model for generating training data
