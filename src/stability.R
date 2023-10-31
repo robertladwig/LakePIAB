@@ -1,5 +1,5 @@
-#setwd("C:/Users/ladwi/Documents/Projects/R/LakePIAB")
-setwd("/Users/robertladwig/Documents/DSI/LakePIAB")
+setwd("C:/Users/ladwi/Documents/Projects/R/LakePIAB")
+#setwd("/Users/robertladwig/Documents/DSI/LakePIAB")
 # setwd('/home/robert/Projects/LakePIAB')
 library(tidyverse)
 library(rLakeAnalyzer)
@@ -123,3 +123,58 @@ p9 = g_heat / g_ice / g_diff / g_conv & plot_layout(guides = 'collect') & plot_a
 ggsave(plot = p9, filename = "figs/Fig7_stability.png", dpi = 300, width = 9, height =12, units = 'in')
 
 ggsave(plot = g, filename = "figs/Fig8_stability.png", dpi = 300, width = 15, height =6, units = 'in')
+
+
+## Anuj's suggested changes
+library(MetBrewer)
+colors = met.brewer(name="Egypt", n=4, type="discrete")
+cbp2 <- c("#C4961A",colors[1],  "#52854C", colors[2:3],  "black", colors[4])
+
+parallel_final <-  sqrt((pa5[,2:ncol(pa1)] - obs[,2:ncol(pa1)])**2)%>% mutate(time = as.POSIXct(pa2$time))
+single_final <-  sqrt((si5[,2:ncol(pa1)] - obs[,2:ncol(pa1)])**2)%>% mutate(time = as.POSIXct(pa2$time))
+input_diff  <-  sqrt((si3[,2:ncol(pa1)] - pb3[,2:ncol(pa1)])**2)%>% mutate(time = as.POSIXct(pa2$time))
+
+g <-ggplot() +
+  geom_line(data = parallel_final, aes(seq(1,nrow(conv_p)), X0,  col = "Final output parallel - observed")) +
+  geom_line(data = single_final, aes(seq(1,nrow(conv_s)), X0,  col = "Final output one-way - observed")) +
+  geom_line(data = input_diff, aes(seq(1,nrow(conv_s)), X0,  col = "Input diffusion one-way - input diffusion process-based")) +
+  # geom_point(data = parallel_final, aes(seq(1,nrow(conv_p)), X0,  col = "Final Output Parallel - Observed")) +
+  # geom_point(data = single_final, aes(seq(1,nrow(conv_s)), X0,  col = "Final Output Single - Observed")) +
+  # geom_point(data = input_diff, aes(seq(1,nrow(conv_s)), X0,  col = "Input Diffusion Single - Input Diffusion Process")) +
+  # geom_line(data = conv, aes(time, X0, col = "Parallel - Single")) +
+  scale_y_continuous(trans = 'log10') +
+  # ylab(expression("log10(" *Delta * "Temperature (\u00B0C))")) +
+  ylab(expression(Delta * "Temperature (\u00B0C)")) +
+  xlab("Time step (3600 s)") +
+  scale_colour_manual(values=cbp2) +
+  # ggtitle('Output after final hybrid MCL model step') +
+  xlim(0,1000)+
+  theme_bw() +
+  theme(legend.position="bottom",legend.title = element_blank()) ; g
+
+ggsave(plot = g, filename = "figs/Fig8_stability_absolute.png", dpi = 300,width = 9, height =4, units = 'in')
+
+
+parallel_final <-  ((pa5[,2:ncol(pa1)] - obs[,2:ncol(pa1)]))%>% mutate(time = as.POSIXct(pa2$time))
+single_final <-  ((si5[,2:ncol(pa1)] - obs[,2:ncol(pa1)]))%>% mutate(time = as.POSIXct(pa2$time))
+input_diff  <-  ((si3[,2:ncol(pa1)] - pb3[,2:ncol(pa1)]))%>% mutate(time = as.POSIXct(pa2$time))
+
+g <-ggplot() +
+  geom_line(data = parallel_final, aes(seq(1,nrow(conv_p)), X0,  col = "Final Output Parallel - Observed")) +
+  geom_line(data = single_final, aes(seq(1,nrow(conv_s)), X0,  col = "Final Output Single - Observed")) +
+  geom_line(data = input_diff, aes(seq(1,nrow(conv_s)), X0,  col = "Input Diffusion Single - Input Diffusion Process")) +
+  geom_point(data = parallel_final, aes(seq(1,nrow(conv_p)), X0,  col = "Final Output Parallel - Observed")) +
+  geom_point(data = single_final, aes(seq(1,nrow(conv_s)), X0,  col = "Final Output Single - Observed")) +
+  geom_point(data = input_diff, aes(seq(1,nrow(conv_s)), X0,  col = "Input Diffusion Single - Input Diffusion Process")) +
+  # geom_line(data = conv, aes(time, X0, col = "Parallel - Single")) +
+  # scale_y_continuous(trans = 'log10') +
+  ylab(expression(Delta * "Temperature (\u00B0C)")) +
+  xlab("Time step (3600 s)") +
+  scale_colour_manual(values=cbp2) +
+  # ggtitle('Output after final hybrid MCL model step') +
+  xlim(0,1000)+ylim(0,2500)+
+  theme_bw() +
+  theme(legend.title = element_blank()) ; g
+
+ggsave(plot = g, filename = "figs/Fig8_stability_unsigned.png", dpi = 300, width = 15, height =6, units = 'in')
+
