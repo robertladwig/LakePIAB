@@ -5,6 +5,8 @@ LakePIAB (Lake Physics in a Box) - a Modular Compositional Learning framework co
 
 $A \frac{\partial T}{\partial t}=\frac{\partial}{\partial z}(A K_z \frac{\partial T}{\partial z}) + \frac{1}{{\rho_w c_p}}\frac{\partial H(z)}{\partial z}  + \frac{\partial A}{\partial z}\frac{H_{geo}}{\rho_w c_p}$
 
+See also the software and data release at [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.10063835.svg)](https://doi.org/10.5281/zenodo.10063835).
+
 ## File structure
 \src includes scripts for running the models:
 - run_ProcessModel.py runs the process-based model for generating training data
